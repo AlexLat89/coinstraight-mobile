@@ -131,8 +131,33 @@ function renderP(){let P=preds().filter(x=>x.sym===sym),tb=$("tbody");tb.innerHT
 $("exp").onclick=()=>{let b=new Blob([JSON.stringify({predictions:preds()},null,2)],{type:"application/json"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="coinstraight-previsioni.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),500)};$("imp").onclick=()=>$("file").click();$("file").onchange=async e=>{try{let j=JSON.parse(await e.target.files[0].text()),a=Array.isArray(j)?j:j.predictions;if(Array.isArray(a)){let m=new Map([...preds(),...a].map(x=>[x.id||x.sym+"-"+x.bucket,x]));save([...m.values()].sort((a,b)=>a.ts-b.ts));renderP()}}catch{alert("File non valido")}e.target.value=""};
 async function seed(){sym=$("sym").value;tf=$("tf").value;view=80;off=0;sel=null;let need=[...new Set([...req,tf])],all=await Promise.all(need.map(x=>load(x)));K={};need.forEach((x,i)=>K[x]=all[i]);let t=await api(`/api/v3/ticker/24hr?symbol=${sym}`);lastP=+t.lastPrice;$("price").textContent="$"+fmt(lastP);$("chg").textContent=`24h ${+t.priceChangePercent>=0?"+":""}${(+t.priceChangePercent).toFixed(2)}%`;await bookLoad();recalc();draw();renderP();openWS()}
 function apply(k){let row=[k.t,String(k.o),String(k.h),String(k.l),String(k.c),String(k.v),k.T];if(!K[k.i])return;let a=K[k.i];if(+a.at(-1)[0]===k.t)a[a.length-1]=row;else{a.push(row);if(a.length>240)a.shift()}}
-function openWS(){if(ws)try{ws.onclose=null,ws.close()}catch{}let s=sym.toLowerCase(),streams=[s+"@ticker",...new Set([...req,tf])].map(x=>s+"@kline_"+x);ws=new WebSocket("wss://stream.binance.com:9443/stream?streams="+streams.join("/"));$("live").textContent="CONNESSIONE";$("dot").className="dot";ws.onopen=()=>{$("live").textContent="LIVE";$("dot").className="dot on"};ws.onmessage=e=>{let d=JSON.parse(e.data).data;if(d.e==="24hrTicker"){$("price").textContent="$"+fmt(d.c);$("chg").textContent=`24h ${+d.P>=0?"+":""}${(+d.P).toFixed(2)}%`}else if(d.e==="kline"){apply(d.k);if(d.k.i===tf)draw();recalc()}};ws.onerror=()=>{$("dot").className="dot bad";$("live").textContent="ERRORE"};ws.onclose=()=>setTimeout(openWS,3000)}
-$("sym").onchange=seed;$("tf").onchange=seed;$("lang").onchange=()=>{lang=$("lang").value;localStorage.setItem("cs_lang",lang);applyLang();recalc();renderP();draw()};setInterval(async()=>{await bookLoad();recalc()},5000);setInterval(evaluate,120000);setInterval(renderP,60000);
+function openWS(){if(ws)try{ws.onclose=null,ws.close()}catch{}let s=sym.toLowerCase(),streams=[s+"@ticker",...new Set([...req,tf])].map(x=>s+"@kline_"+x);try{ws=new WebSocket("wss://data-stream.binance.vision/stream?streams="+streams.join("/"))}catch(e){ws=new WebSocket("wss://stream.binance.com:9443/stream?streams="+streams.join("/"))}$("live").textContent="CONNESSIONE";$("dot").className="dot";ws.onopen=()=>{$("live").textContent="LIVE";$("dot").className="dot on"};ws.onmessage=e=>{let d=JSON.parse(e.data).data;if(d.e==="24hrTicker"){$("price").textContent="$"+fmt(d.c);$("chg").textContent=`24h ${+d.P>=0?"+":""}${(+d.P).toFixed(2)}%`}else if(d.e==="kline"){apply(d.k);if(d.k.i===tf)draw();recalc()}};ws.onerror=()=>{$("dot").className="dot bad";$("live").textContent="ERRORE"};ws.onclose=()=>setTimeout(openWS,3000)}
+async function pollMarket(){
+  try{
+    const t=await api(`/api/v3/ticker/24hr?symbol=${sym}`);
+    $("price").textContent="$"+fmt(t.lastPrice);
+    $("chg").textContent=`24h ${+t.priceChangePercent>=0?"+":""}${(+t.priceChangePercent).toFixed(2)}%`;
+    const need=[...new Set([...req,tf])];
+    const rows=await Promise.all(need.map(x=>load(x,sym,3)));
+    need.forEach((intv,i)=>{
+      const target=K[intv]||[];
+      for(const row of rows[i]){
+        const ix=target.findIndex(x=>+x[0]===+row[0]);
+        if(ix>=0)target[ix]=row;else target.push(row);
+      }
+      while(target.length>240)target.shift();
+      K[intv]=target;
+    });
+    await bookLoad();
+    recalc();draw();
+    $("dot").className="dot on";
+    if(ws==null||ws.readyState!==1)$("live").textContent="LIVE REST";
+  }catch(e){
+    $("dot").className="dot bad";
+    $("live").textContent="RETRY";
+  }
+}
+$("sym").onchange=seed;$("tf").onchange=seed;$("lang").onchange=()=>{lang=$("lang").value;localStorage.setItem("cs_lang",lang);applyLang();recalc();renderP();draw()};setInterval(pollMarket,10000);setInterval(evaluate,120000);setInterval(renderP,60000);
 let promptEvent=null;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptEvent=e;$("install").style.display=""});$("install").onclick=async()=>{if(promptEvent){promptEvent.prompt();await promptEvent.userChoice;promptEvent=null;$("install").style.display="none"}};
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
 applyLang();seed().catch(()=>{$("dot").className="dot bad";$("summary").textContent=tr("noData")});setTimeout(evaluate,3500);
