@@ -88,9 +88,10 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 <div class="tablewrap"><table class="tbl"><thead><tr><th>Ora</th><th>Prezzo</th><th>1h</th><th>Esito</th><th>4h</th><th>Esito</th><th>24h</th><th>Esito</th></tr></thead><tbody id="tbody"></tbody></table></div>
 </div>
 
-<div class="hint">Crypto: Binance spot. Forex/oro/petrolio: biquote. Su forex e CFD la pressione rialzista/ribassista e stimata dal modello, non da un order book centrale. Le percentuali sono stime euristiche e non garantiscono movimenti futuri. L'app non esegue ordini.</div>
+<div class="hint">Crypto: Binance spot. Forex/oro/petrolio: biquote con streaming tick live via WebSocket/SignalR. Su forex e CFD la pressione rialzista/ribassista e stimata dal modello, non da un order book centrale. Le percentuali sono stime euristiche e non garantiscono movimenti futuri. L'app non esegue ordini.</div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 <script>
 const $=x=>document.getElementById(x),clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),avg=a=>a.reduce((s,v)=>s+v,0)/(a.length||1);
 const ASSETS={
@@ -98,7 +99,7 @@ SOLUSDT:{p:"binance",name:"SOL",prefix:"$"},BTCUSDT:{p:"binance",name:"BTC",pref
 EURUSD:{p:"bq",name:"EUR/USD",bq:"EURUSD",prefix:""},GBPUSD:{p:"bq",name:"GBP/USD",bq:"GBPUSD",prefix:""},AUDUSD:{p:"bq",name:"AUD/USD",bq:"AUDUSD",prefix:""},USDJPY:{p:"bq",name:"USD/JPY",bq:"USDJPY",prefix:""},USDCAD:{p:"bq",name:"USD/CAD",bq:"USDCAD",prefix:""},USDCHF:{p:"bq",name:"USD/CHF",bq:"USDCHF",prefix:""},NZDUSD:{p:"bq",name:"NZD/USD",bq:"NZDUSD",prefix:""},EURGBP:{p:"bq",name:"EUR/GBP",bq:"EURGBP",prefix:""},
 XAUUSD:{p:"bq",name:"ORO",bq:"XAUUSD",prefix:"$"},USOIL:{p:"bq",name:"WTI",bq:"USOIL",prefix:"$"},UKOIL:{p:"bq",name:"BRENT",bq:"UKOIL",prefix:"$"},SPCX:{p:"bq",name:"SPACEX",bq:"SPCX",prefix:"$"}
 };
-let sym="SOLUSDT",tf="5m",K={},ws=null,poll=null,lastPrice=null,book={b:50,s:50,ok:false},view=80,off=0,drag=false,sx=0,so=0,spcxResolved=null;
+let sym="SOLUSDT",tf="5m",K={},ws=null,poll=null,bqConn=null,bqSubscribed=null,lastPrice=null,book={b:50,s:50,ok:false},view=80,off=0,drag=false,sx=0,so=0,spcxResolved=null;
 const req=["5m","15m","1h","4h"],PKEY="csl_web_predictions_v1",PINT=15*60*1000;
 function asset(s=sym){return ASSETS[s]||ASSETS.SOLUSDT}
 function isCrypto(s=sym){return asset(s).p==="binance"}
@@ -164,9 +165,86 @@ function renderP(){
 }
 $("clearPred").onclick=()=>{if(confirm("Azzero lo storico previsioni?")){localStorage.removeItem(PKEY);renderP()}};
 async function refreshAll(){let needed=[...new Set([...req,tf])],all=await Promise.all(needed.map(x=>loadK(x)));K={};needed.forEach((x,i)=>K[x]=all[i]);await loadBook();let q=await quote();updateQuote(q);recalc();draw();renderP();$("dot").className="dot on";$("live").textContent=q.state==="closed"?"CHIUSO":"LIVE"}
-function stop(){if(ws){try{ws.onclose=null;ws.close()}catch{}ws=null}if(poll){clearInterval(poll);poll=null}}
+async function stop(){
+    if(ws){try{ws.onclose=null;ws.close()}catch{}ws=null}
+    if(poll){clearInterval(poll);poll=null}
+    if(bqConn){
+      try{
+        if(bqSubscribed)await bqConn.invoke("Unsubscribe",[bqSubscribed]);
+      }catch{}
+      try{await bqConn.stop()}catch{}
+      bqConn=null;bqSubscribed=null;
+    }
+  }
 function startCryptoWS(){let s=sym.toLowerCase(),streams=[s+"@ticker",...new Set([...req,tf])].map(x=>s+"@kline_"+x);try{ws=new WebSocket("wss://data-stream.binance.vision/stream?streams="+streams.join("/"))}catch{return}ws.onopen=()=>{$("dot").className="dot on";$("live").textContent="LIVE"};ws.onmessage=e=>{let d=JSON.parse(e.data).data;if(d.e==="24hrTicker")updateQuote({p:+d.c,ch:+d.P,hi:+d.h,lo:+d.l,state:"open"});else if(d.e==="kline"){let k=d.k,row=[k.t,String(k.o),String(k.h),String(k.l),String(k.c),String(k.v),k.T];if(K[k.i]){let a=K[k.i];if(+a.at(-1)[0]===k.t)a[a.length-1]=row;else{a.push(row);if(a.length>240)a.shift()}}if(k.i===tf)draw();recalc()}};ws.onerror=()=>{$("dot").className="dot bad";$("live").textContent="REST"}}
-async function start(){stop();sym=$("sym").value;tf=$("tf").value;view=80;off=0;K={};$("dot").className="dot";$("live").textContent="CONNESSIONE";$("summary").textContent="Carico "+asset().name+"...";try{await refreshAll();if(isCrypto())startCryptoWS();poll=setInterval(async()=>{try{if(!isCrypto()){await refreshAll()}else{await loadBook();recalc()}}catch{}},isCrypto()?7000:12000)}catch(e){$("dot").className="dot bad";$("live").textContent="ERRORE";$("summary").textContent=e.message+(sym==="SPCX"?" — il resto dei mercati continua a funzionare normalmente.":"")}}
+async function startBQWS(){
+  const a=asset();
+  const bs=await resolveBq(a);
+  if(!window.signalR)throw Error("Modulo live SignalR non caricato");
+  bqSubscribed=bs;
+  bqConn=new signalR.HubConnectionBuilder()
+    .withUrl("https://biquote.io/hubs/tick")
+    .withAutomaticReconnect()
+    .build();
+
+  bqConn.on("ReceiveTick",tick=>{
+    const ts=String(tick.symbol||"").toUpperCase();
+    if(ts!==String(bqSubscribed||"").toUpperCase())return;
+    const bid=+tick.bid,ask=+tick.ask;
+    const mid=Number.isFinite(+tick.mid)?+tick.mid:
+      (Number.isFinite(bid)&&Number.isFinite(ask)?(bid+ask)/2:
+      Number.isFinite(+tick.last)?+tick.last:NaN);
+    const ch=Number.isFinite(+tick.dayDiffPercent)?+tick.dayDiffPercent:
+      Number.isFinite(+tick.changePercent)?+tick.changePercent:NaN;
+    const hi=Number.isFinite(+tick.dayHigh)?+tick.dayHigh:
+      Number.isFinite(+tick.high)?+tick.high:mid;
+    const lo=Number.isFinite(+tick.dayLow)?+tick.dayLow:
+      Number.isFinite(+tick.low)?+tick.low:mid;
+    if(Number.isFinite(mid)){
+      updateQuote({p:mid,ch,hi,lo,state:tick.marketState||"open"});
+      $("dot").className="dot on";
+      $("live").textContent="LIVE TICK";
+    }
+  });
+
+  bqConn.onreconnecting(()=>{
+    $("dot").className="dot";
+    $("live").textContent="RICONNESSIONE";
+  });
+  bqConn.onreconnected(async()=>{
+    $("dot").className="dot on";
+    $("live").textContent="LIVE TICK";
+    try{await bqConn.invoke("Subscribe",[bqSubscribed])}catch{}
+  });
+  bqConn.onclose(()=>{
+    if(!isCrypto()){
+      $("dot").className="dot bad";
+      $("live").textContent="SCOLLEGATO";
+    }
+  });
+
+  await bqConn.start();
+  await bqConn.invoke("Subscribe",[bs]);
+  try{
+    const t=await bqConn.invoke("GetLatestTick",bs);
+    if(t){
+      const bid=+t.bid,ask=+t.ask;
+      const mid=Number.isFinite(+t.mid)?+t.mid:
+        (Number.isFinite(bid)&&Number.isFinite(ask)?(bid+ask)/2:
+        Number.isFinite(+t.last)?+t.last:NaN);
+      if(Number.isFinite(mid))updateQuote({
+        p:mid,
+        ch:Number.isFinite(+t.dayDiffPercent)?+t.dayDiffPercent:+t.changePercent,
+        hi:Number.isFinite(+t.dayHigh)?+t.dayHigh:(+t.high||mid),
+        lo:Number.isFinite(+t.dayLow)?+t.dayLow:(+t.low||mid),
+        state:t.marketState||"open"
+      });
+    }
+  }catch{}
+  $("dot").className="dot on";
+  $("live").textContent="LIVE TICK";
+}
+async function start(){await stop();sym=$("sym").value;tf=$("tf").value;view=80;off=0;K={};$("dot").className="dot";$("live").textContent="CONNESSIONE";$("summary").textContent="Carico "+asset().name+"...";try{await refreshAll();if(isCrypto()){startCryptoWS();poll=setInterval(async()=>{try{await loadBook();recalc()}catch{}},7000)}else{await startBQWS();poll=setInterval(async()=>{try{let needed=[...new Set([...req,tf])],all=await Promise.all(needed.map(x=>loadK(x)));needed.forEach((x,i)=>K[x]=all[i]);recalc();draw()}catch{}},60000)}}catch(e){$("dot").className="dot bad";$("live").textContent="ERRORE";$("summary").textContent=e.message+(sym==="SPCX"?" — il resto dei mercati continua a funzionare normalmente.":"")}}
 $("sym").onchange=start;$("tf").onchange=start;$("refresh").onclick=start;setInterval(evaluate,120000);start();setTimeout(evaluate,4000);
 </script>
 </body>
