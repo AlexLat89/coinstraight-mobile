@@ -94,11 +94,34 @@ const I18N={"it":{"subtitle":"Crypto spiegata in parole semplici","priceNow":"PR
 function tr(k){return I18N[lang][k]||I18N.en[k]||k}
 function applyLang(){
   document.documentElement.lang=lang;
-  const m={lblSubtitle:"subtitle",lblPriceNow:"priceNow",lblForecast:"forecast",lblPressure:"pressure",lblBuyers:"buyers",lblSellers:"sellers",lblVolume:"volume",lblStretch:"stretch",lblCandles:"candles",lblChartHint:"chartHint",lblLevels:"levels",lblAbove:"above",lblBelow:"below",lblPreds:"preds",lblAuto:"auto"};
+  const m={
+    lblSubtitle:"subtitle",lblPriceNow:"priceNow",lblForecast:"forecast",lblPressure:"pressure",
+    lblBuyers:"buyers",lblSellers:"sellers",lblVolume:"volume",lblStretch:"stretch",
+    lblCandles:"candles",lblChartHint:"chartHint",lblLevels:"levels",lblAbove:"above",
+    lblBelow:"below",lblPreds:"preds",lblAuto:"auto",lbl1hForecast:"oneHour",
+    lbl4hForecast:"fourHours",lbl24hForecast:"day24",lbl1hStat:"oneHour",
+    lbl4hStat:"fourHours",lbl24hStat:"day24",thTime:"time",thPrice:"price",
+    thResult1:"result",thResult4:"result",thResult24:"result",lblDisclaimer:"disclaimer"
+  };
   for(const id in m){if($(id))$(id).textContent=tr(m[id])}
   if($("exp"))$("exp").textContent=tr("export");
   if($("imp"))$("imp").textContent=tr("import");
+  if($("install"))$("install").textContent=tr("install");
+  if($("reset"))$("reset").textContent=tr("reset");
   if($("lang"))$("lang").value=lang;
+  const t=$("tf").options;
+  if(lang==="it"){t[0].text="1 minuto";t[1].text="5 minuti";t[2].text="15 minuti";t[3].text="1 ora"}
+  else if(lang==="es"){t[0].text="1 minuto";t[1].text="5 minutos";t[2].text="15 minutos";t[3].text="1 hora"}
+  else if(lang==="nl"){t[0].text="1 minuut";t[1].text="5 minuten";t[2].text="15 minuten";t[3].text="1 uur"}
+  else{t[0].text="1 minute";t[1].text="5 minutes";t[2].text="15 minutes";t[3].text="1 hour"}
+  if(!lastP){
+    $("summary").textContent=tr("initialWait");
+    $("state").textContent="🟡 "+tr("uncertain");
+    $("live").textContent=tr("connecting");
+    $("ohlc").textContent=tr("touchCandle");
+    $("n1").textContent=tr("noResult");$("n4").textContent=tr("noResult");$("n24").textContent=tr("noResult");
+    $("reg").textContent=tr("forecastEvery");
+  }
 }
 function fmt(x){x=+x;return x>=1000?x.toLocaleString(undefined,{maximumFractionDigits:2}):x>=10?x.toFixed(4):x>=1?x.toFixed(5):x.toFixed(6)}
 function ema(a,p){if(a.length<p)return a.at(-1)||0;let e=avg(a.slice(0,p)),k=2/(p+1);for(let i=p;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
