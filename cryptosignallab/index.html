@@ -74,7 +74,7 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 <div class="card">
 <div class="top"><div><div class="sub">CANDELE</div><div id="ohlc" class="sub">--</div></div><div><button id="minus">−</button><button id="plus">+</button><button id="reset">RESET</button></div></div>
 <canvas id="chart" width="1000" height="500"></canvas>
-<div class="hint">Rotella mouse = zoom • trascina = scorri • doppio click = reset</div>
+<div class="hint">In basso: giorno + ora locale • Rotella mouse = zoom • trascina = scorri • doppio click = reset</div>
 </div>
 
 <div class="card">
@@ -130,7 +130,61 @@ let pr=isCrypto()?(book.b>58?"compratori piu presenti":book.s>58?"venditori piu 
 $("summary").textContent=asset().name+": "+text(p1.sig).toLowerCase()+" nel breve; "+pr+". Sopra "+px(lv.res)+" la salita sarebbe piu credibile; sotto "+px(lv.sup)+" aumenta il rischio di discesa.";
 record(a15.last,p1,p4,p24)}
 function updateQuote(q){if(!Number.isFinite(q.p))return;lastPrice=q.p;$("price").textContent=px(q.p);let ch=Number.isFinite(q.ch)?((q.ch>=0?"+":"")+q.ch.toFixed(2)+"%"):"--";let freshness=isCrypto()?"live":(Number.isFinite(+q.age)?("ultimo tick "+Math.max(0,Math.round(+q.age))+"s fa"):"stream");$("chg").textContent=(String(q.state).toLowerCase()==="closed"?"Mercato chiuso • ":"")+"variazione "+ch+" • max "+px(q.hi)+" • min "+px(q.lo)+" • "+freshness}
-function draw(){let data=K[tf];if(!data?.length)return;let cv=$("chart"),ctx=cv.getContext("2d"),W=cv.width,H=cv.height;view=clamp(view,18,Math.min(180,data.length));off=clamp(off,0,Math.max(0,data.length-view));let ei=Math.max(view,data.length-off),si=Math.max(0,ei-view),c=data.slice(si,ei),cl=c.map(x=>+x[4]),e9=emas(cl,9),e21=emas(cl,21),hi=Math.max(...c.map(x=>+x[2])),lo=Math.min(...c.map(x=>+x[3])),pad=(hi-lo)*.07||1,top=20,bot=390,vtop=415,vbot=465,left=8,right=75,pw=W-left-right,ph=bot-top,y=p=>top+(hi+pad-p)/(hi-lo+2*pad)*ph,x=i=>left+(i+.5)*pw/c.length,cw=Math.max(3,pw/c.length*.62),mv=Math.max(...c.map(x=>+x[5]))||1;ctx.fillStyle="#0f151e";ctx.fillRect(0,0,W,H);ctx.strokeStyle="#263143";ctx.fillStyle="#8f9bad";ctx.font="11px system-ui";for(let i=0;i<6;i++){let yy=top+i*ph/5;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(W-right,yy);ctx.stroke();ctx.fillText(fmt(hi+pad-(hi-lo+2*pad)*i/5),W-right+5,yy+4)}c.forEach((k,i)=>{let o=+k[1],h=+k[2],l=+k[3],cc=+k[4],xx=x(i),col=cc>=o?"#66dfa0":"#ff7c87";ctx.strokeStyle=col;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(xx,y(h));ctx.lineTo(xx,y(l));ctx.stroke();ctx.fillRect(xx-cw/2,Math.min(y(o),y(cc)),cw,Math.max(1.5,Math.abs(y(o)-y(cc))));if(+k[5]>0){ctx.globalAlpha=.28;ctx.fillRect(xx-cw/2,vbot-(+k[5]/mv)*(vbot-vtop),cw,(+k[5]/mv)*(vbot-vtop));ctx.globalAlpha=1}});function line(a,col){ctx.strokeStyle=col;ctx.beginPath();let go=false;a.forEach((v,i)=>{if(!Number.isFinite(v))return;go?ctx.lineTo(x(i),y(v)):(ctx.moveTo(x(i),y(v)),go=true)});ctx.stroke()}line(e9,"#58d3ea");line(e21,"#f5d76f");let k=c.at(-1),dt=new Date(+k[0]);$("ohlc").textContent=dt.toLocaleString()+" • O "+fmt(k[1])+" H "+fmt(k[2])+" L "+fmt(k[3])+" C "+fmt(k[4])}
+function draw(){
+  let data=K[tf];if(!data?.length)return;
+  let cv=$("chart"),ctx=cv.getContext("2d"),W=cv.width,H=cv.height;
+  view=clamp(view,18,Math.min(180,data.length));off=clamp(off,0,Math.max(0,data.length-view));
+  let ei=Math.max(view,data.length-off),si=Math.max(0,ei-view),c=data.slice(si,ei),cl=c.map(x=>+x[4]),
+      e9=emas(cl,9),e21=emas(cl,21),hi=Math.max(...c.map(x=>+x[2])),lo=Math.min(...c.map(x=>+x[3])),
+      pad=(hi-lo)*.07||1,top=20,bot=375,vtop=400,vbot=447,left=8,right=75,pw=W-left-right,ph=bot-top,
+      y=p=>top+(hi+pad-p)/(hi-lo+2*pad)*ph,x=i=>left+(i+.5)*pw/c.length,
+      cw=Math.max(3,pw/c.length*.62),mv=Math.max(...c.map(x=>+x[5]))||1;
+
+  ctx.fillStyle="#0f151e";ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle="#263143";ctx.fillStyle="#8f9bad";ctx.font="11px system-ui";
+
+  for(let i=0;i<6;i++){
+    let yy=top+i*ph/5;
+    ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(W-right,yy);ctx.stroke();
+    ctx.fillText(fmt(hi+pad-(hi-lo+2*pad)*i/5),W-right+5,yy+4);
+  }
+
+  // Asse temporale: giorno + ora locale del dispositivo.
+  const labelCount=cv.clientWidth<650?4:6;
+  ctx.textAlign="center";ctx.textBaseline="top";ctx.fillStyle="#8f9bad";
+  for(let j=0;j<labelCount;j++){
+    const idx=Math.round(j*(c.length-1)/(labelCount-1));
+    const xx=x(idx),dt=new Date(+c[idx][0]);
+    const dd=String(dt.getDate()).padStart(2,"0"),mm=String(dt.getMonth()+1).padStart(2,"0");
+    const hh=String(dt.getHours()).padStart(2,"0"),mi=String(dt.getMinutes()).padStart(2,"0");
+    const label=dd+"/"+mm+" "+hh+":"+mi;
+    ctx.strokeStyle="#202b39";ctx.beginPath();ctx.moveTo(xx,top);ctx.lineTo(xx,vbot);ctx.stroke();
+    const lx=clamp(xx,58,W-right-58);
+    ctx.fillText(label,lx,458);
+  }
+  ctx.textAlign="left";ctx.textBaseline="alphabetic";
+
+  c.forEach((k,i)=>{
+    let o=+k[1],h=+k[2],l=+k[3],cc=+k[4],xx=x(i),col=cc>=o?"#66dfa0":"#ff7c87";
+    ctx.strokeStyle=col;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(xx,y(h));ctx.lineTo(xx,y(l));ctx.stroke();
+    ctx.fillRect(xx-cw/2,Math.min(y(o),y(cc)),cw,Math.max(1.5,Math.abs(y(o)-y(cc))));
+    if(+k[5]>0){
+      ctx.globalAlpha=.28;
+      ctx.fillRect(xx-cw/2,vbot-(+k[5]/mv)*(vbot-vtop),cw,(+k[5]/mv)*(vbot-vtop));
+      ctx.globalAlpha=1
+    }
+  });
+
+  function line(a,col){
+    ctx.strokeStyle=col;ctx.beginPath();let go=false;
+    a.forEach((v,i)=>{if(!Number.isFinite(v))return;go?ctx.lineTo(x(i),y(v)):(ctx.moveTo(x(i),y(v)),go=true)});
+    ctx.stroke()
+  }
+  line(e9,"#58d3ea");line(e21,"#f5d76f");
+
+  let k=c.at(-1),dt=new Date(+k[0]);
+  $("ohlc").textContent=dt.toLocaleString()+" • O "+fmt(k[1])+" H "+fmt(k[2])+" L "+fmt(k[3])+" C "+fmt(k[4])
+}
 function zoom(n){view=clamp(Math.round(n),18,180);draw()}$("plus").onclick=()=>zoom(view*.78);$("minus").onclick=()=>zoom(view*1.28);$("reset").onclick=()=>{view=80;off=0;draw()};let cv=$("chart");cv.addEventListener("wheel",e=>{e.preventDefault();zoom(view*(e.deltaY<0?.82:1.22))},{passive:false});cv.onmousedown=e=>{drag=true;sx=e.clientX;so=off};window.onmousemove=e=>{if(!drag)return;let r=cv.getBoundingClientRect(),per=(r.width*.92)/view;off=clamp(so+Math.round((e.clientX-sx)/Math.max(2,per)),0,Math.max(0,(K[tf]?.length||0)-view));draw()};window.onmouseup=()=>drag=false;cv.ondblclick=()=>{$("reset").click()};
 function preds(){try{return JSON.parse(localStorage.getItem(PKEY)||"[]")}catch{return[]}}function saveP(a){localStorage.setItem(PKEY,JSON.stringify(a.slice(-800)))}
 function actual(m,h){let t=h==="1h"?.35:h==="4h"?.75:1.4;return m>t?"UP":m<-t?"DOWN":"FLAT"}
@@ -285,7 +339,7 @@ async function start(){
     $("summary").textContent=e.message+(sym==="SPCX"?" — il resto dei mercati continua a funzionare normalmente.":"");
   }
 }
-$("sym").onchange=start;$("tf").onchange=start;$("refresh").onclick=start;setInterval(evaluate,120000);if("caches" in window){caches.delete("coinstraight-v4").catch(()=>{})}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{})}start();setTimeout(evaluate,4000);
+$("sym").onchange=start;$("tf").onchange=start;$("refresh").onclick=start;setInterval(evaluate,120000);if("caches" in window){caches.delete("coinstraight-v5").catch(()=>{})}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{})}start();setTimeout(evaluate,4000);
 </script>
 </body>
 </html>
