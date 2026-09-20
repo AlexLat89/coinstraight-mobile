@@ -1,4 +1,4 @@
-const CACHE="coinstraight-v4";
+const CACHE="coinstraight-v5";
 const SHELL=["./","./index.html","./manifest.webmanifest","./icon.svg"];
 
 self.addEventListener("install",event=>{
@@ -17,8 +17,8 @@ self.addEventListener("fetch",event=>{
   if(event.request.method!=="GET")return;
   const url=new URL(event.request.url);
 
-  if(url.hostname.includes("binance.com")||url.hostname.includes("binance.vision")){
-    event.respondWith(fetch(event.request));
+  if(url.origin!==self.location.origin || url.hostname.includes("binance.com") || url.hostname.includes("binance.vision") || url.hostname.includes("biquote.io")){
+    event.respondWith(fetch(event.request,{cache:"no-store"}));
     return;
   }
 
