@@ -32,22 +32,22 @@
 <body>
 <div class="wrap">
 <header>
-  <div class="top"><div><h1>COINSTRAIGHT MOBILE</h1><div class="sub">Crypto spiegata in parole semplici</div></div><div class="live"><span id="dot" class="dot"></span><span id="live">CONNESSIONE</span></div></div>
+  <div class="top"><div><h1>COINSTRAIGHT MOBILE</h1><div class="sub" id="lblSubtitle">Crypto spiegata in parole semplici</div></div><div class="live"><span id="dot" class="dot"></span><span id="live">CONNESSIONE</span></div></div>
   <div class="controls">
     <select id="sym"><option value="SOLUSDT">SOL / USDT</option><option value="BTCUSDT">BTC / USDT</option><option value="ETHUSDT">ETH / USDT</option><option value="XRPUSDT">XRP / USDT</option><option value="ADAUSDT">ADA / USDT</option><option value="DOGEUSDT">DOGE / USDT</option><option value="BNBUSDT">BNB / USDT</option></select>
-    <select id="tf"><option value="1m">1 minuto</option><option value="5m" selected>5 minuti</option><option value="15m">15 minuti</option><option value="1h">1 ora</option></select>
+    <select id="tf"><option value="1m">1 minuto</option><option value="5m" selected>5 minuti</option><option value="15m">15 minuti</option><option value="1h">1 ora</option></select><select id="lang"><option value="it">🇮🇹 Italiano</option><option value="en">🇬🇧 English</option><option value="es">🇪🇸 Español</option><option value="nl">🇳🇱 Nederlands</option></select>
     <button id="install" style="display:none">INSTALLA</button>
   </div>
 </header>
 
 <div class="card hero">
-  <div class="sub">PREZZO ADESSO</div><div id="price" class="price">$--</div><div id="chg" class="sub">24h --</div>
+  <div class="sub" id="lblPriceNow">PREZZO ADESSO</div><div id="price" class="price">$--</div><div id="chg" class="sub">24h --</div>
   <div id="state" class="state range">🟡 INDECISO</div>
   <div id="summary" class="summary">Attendo dati sufficienti.</div>
 </div>
 
 <div class="card">
-  <div class="sub">COSA POTREBBE SUCCEDERE</div>
+  <div class="sub" id="lblForecast">COSA POTREBBE SUCCEDERE</div>
   <div class="grid3">
     <div class="sig"><span class="sub">1 ORA</span><b id="s1" class="range">--</b><span id="p1" class="sub">--</span><div class="bar"><i id="u1" class="bu"></i><i id="f1" class="bf"></i><i id="d1" class="bd"></i></div></div>
     <div class="sig"><span class="sub">4 ORE</span><b id="s4" class="range">--</b><span id="p4" class="sub">--</span><div class="bar"><i id="u4" class="bu"></i><i id="f4" class="bf"></i><i id="d4" class="bd"></i></div></div>
@@ -56,25 +56,25 @@
 </div>
 
 <div class="card">
-  <div class="sub">COMPRATORI / VENDITORI</div><div class="press"><i id="buy" class="buy"></i><i id="sell" class="sell"></i></div>
-  <div class="row"><span>Compratori</span><b id="bt">--</b></div><div class="row"><span>Venditori</span><b id="st">--</b></div>
-  <div class="row"><span>Volume</span><b id="vol">--</b></div><div class="row"><span>Prezzo tirato?</span><b id="rsiTxt">--</b></div>
+  <div class="sub" id="lblPressure">COMPRATORI / VENDITORI</div><div class="press"><i id="buy" class="buy"></i><i id="sell" class="sell"></i></div>
+  <div class="row"><span id="lblBuyers">Compratori</span><b id="bt">--</b></div><div class="row"><span id="lblSellers">Venditori</span><b id="st">--</b></div>
+  <div class="row"><span id="lblVolume">Volume</span><b id="vol">--</b></div><div class="row"><span id="lblStretch">Prezzo tirato?</span><b id="rsiTxt">--</b></div>
 </div>
 
 <div class="card">
-  <div class="charthead"><div><div class="sub">CANDELE LIVE</div><div id="ohlc" class="sub">Tocca una candela per i dettagli</div></div><div><button id="minus">−</button><button id="plus">+</button><button id="reset">RESET</button></div></div>
+  <div class="charthead"><div><div class="sub" id="lblCandles">CANDELE LIVE</div><div id="ohlc" class="sub">Tocca una candela per i dettagli</div></div><div><button id="minus">−</button><button id="plus">+</button><button id="reset">RESET</button></div></div>
   <canvas id="chart" width="1000" height="500"></canvas>
-  <div class="hint">Due dita = zoom • trascina = scorri • tocca = dettagli • doppio tap/click = reset</div>
+  <div class="hint" id="lblChartHint">Due dita = zoom • trascina = scorri • tocca = dettagli • doppio tap/click = reset</div>
 </div>
 
 <div class="card">
-  <div class="sub">LIVELLI DA GUARDARE</div>
-  <div class="row"><span>Se supera</span><b id="res" class="up">$--</b></div>
-  <div class="row"><span>Se scende sotto</span><b id="sup" class="down">$--</b></div>
+  <div class="sub" id="lblLevels">LIVELLI DA GUARDARE</div>
+  <div class="row"><span id="lblAbove">Se supera</span><b id="res" class="up">$--</b></div>
+  <div class="row"><span id="lblBelow">Se scende sotto</span><b id="sup" class="down">$--</b></div>
 </div>
 
 <div class="card">
-  <div class="top"><div><div class="sub">LE MIE PREVISIONI</div><b>Controllo automatico 1h / 4h / 24h</b></div><div><button id="exp">ESPORTA</button><button id="imp">IMPORTA</button><input id="file" type="file" accept=".json" hidden></div></div>
+  <div class="top"><div><div class="sub" id="lblPreds">LE MIE PREVISIONI</div><b id="lblAuto">Controllo automatico 1h / 4h / 24h</b></div><div><button id="exp">ESPORTA</button><button id="imp">IMPORTA</button><input id="file" type="file" accept=".json" hidden></div></div>
   <div class="stats">
     <div class="stat"><span class="sub">1 ORA</span><strong id="a1">--</strong><span id="n1" class="sub">nessun risultato</span></div>
     <div class="stat"><span class="sub">4 ORE</span><strong id="a4">--</strong><span id="n4" class="sub">nessun risultato</span></div>
@@ -90,6 +90,16 @@
 const $=x=>document.getElementById(x),clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),avg=a=>a.reduce((s,v)=>s+v,0)/(a.length||1);
 let sym="SOLUSDT",tf="5m",K={},ws=null,lastP=null,book={b:50,s:50},view=80,off=0,sel=null,geom=null,drag=false,sx=0,so=0;
 const req=["5m","15m","1h","4h"],KEY="coinstraight_predictions_v3",INT=15*60*1000;
+const I18N={"it":{"subtitle":"Crypto spiegata in parole semplici","priceNow":"PREZZO ADESSO","forecast":"COSA POTREBBE SUCCEDERE","pressure":"COMPRATORI / VENDITORI","buyers":"Compratori","sellers":"Venditori","volume":"Volume","stretch":"Prezzo tirato?","candles":"CANDELE LIVE","chartHint":"Due dita = zoom • trascina = scorri • tocca = dettagli • doppio tap/click = reset","levels":"LIVELLI DA GUARDARE","above":"Se supera","below":"Se scende sotto","preds":"LE MIE PREVISIONI","auto":"Controllo automatico 1h / 4h / 24h","export":"ESPORTA","import":"IMPORTA","up":"SALE","down":"SCENDE","flat":"RESTA LÌ","strongUp":"PIÙ FORZA IN SALITA","strongDown":"PIÙ FORZA IN DISCESA","uncertain":"INDECISO","noData":"Dati non disponibili. Riprovo automaticamente."},"en":{"subtitle":"Crypto explained in simple words","priceNow":"PRICE NOW","forecast":"WHAT COULD HAPPEN","pressure":"BUYERS / SELLERS","buyers":"Buyers","sellers":"Sellers","volume":"Volume","stretch":"Price stretched?","candles":"LIVE CANDLES","chartHint":"Two fingers = zoom • drag = scroll • tap = details • double tap/click = reset","levels":"LEVELS TO WATCH","above":"If it breaks above","below":"If it drops below","preds":"MY FORECASTS","auto":"Automatic check after 1h / 4h / 24h","export":"EXPORT","import":"IMPORT","up":"UP","down":"DOWN","flat":"STAYS FLAT","strongUp":"MORE UPSIDE STRENGTH","strongDown":"MORE DOWNSIDE PRESSURE","uncertain":"UNCERTAIN","noData":"Market data unavailable. Retrying automatically."},"es":{"subtitle":"Cripto explicada de forma sencilla","priceNow":"PRECIO AHORA","forecast":"QUÉ PODRÍA PASAR","pressure":"COMPRADORES / VENDEDORES","buyers":"Compradores","sellers":"Vendedores","volume":"Volumen","stretch":"¿Precio estirado?","candles":"VELAS EN DIRECTO","chartHint":"Dos dedos = zoom • arrastra = desplaza • toca = detalles • doble toque/clic = reset","levels":"NIVELES A VIGILAR","above":"Si supera","below":"Si baja de","preds":"MIS PREVISIONES","auto":"Control automático 1h / 4h / 24h","export":"EXPORTAR","import":"IMPORTAR","up":"SUBE","down":"BAJA","flat":"SE MANTIENE","strongUp":"MÁS FUERZA ALCISTA","strongDown":"MÁS PRESIÓN BAJISTA","uncertain":"INCIERTO","noData":"Datos de mercado no disponibles. Reintentando automáticamente."},"nl":{"subtitle":"Crypto uitgelegd in eenvoudige woorden","priceNow":"PRIJS NU","forecast":"WAT KAN ER GEBEUREN","pressure":"KOPERS / VERKOPERS","buyers":"Kopers","sellers":"Verkopers","volume":"Volume","stretch":"Prijs uitgerekt?","candles":"LIVE CANDLES","chartHint":"Twee vingers = zoom • slepen = scrollen • tik = details • dubbel tikken/klikken = reset","levels":"BELANGRIJKE NIVEAUS","above":"Als prijs erboven komt","below":"Als prijs eronder zakt","preds":"MIJN VOORSPELLINGEN","auto":"Automatische controle na 1u / 4u / 24u","export":"EXPORTEREN","import":"IMPORTEREN","up":"STIJGT","down":"DAALT","flat":"BLIJFT GELIJK","strongUp":"MEER OPWAARTSE KRACHT","strongDown":"MEER NEERWAARTSE DRUK","uncertain":"ONZEKER","noData":"Marktgegevens niet beschikbaar. Automatisch opnieuw proberen."}};let lang=localStorage.getItem("cs_lang")||((navigator.language||"it").slice(0,2));if(!I18N[lang])lang="en";
+function tr(k){return I18N[lang][k]||I18N.en[k]||k}
+function applyLang(){
+  document.documentElement.lang=lang;
+  const m={lblSubtitle:"subtitle",lblPriceNow:"priceNow",lblForecast:"forecast",lblPressure:"pressure",lblBuyers:"buyers",lblSellers:"sellers",lblVolume:"volume",lblStretch:"stretch",lblCandles:"candles",lblChartHint:"chartHint",lblLevels:"levels",lblAbove:"above",lblBelow:"below",lblPreds:"preds",lblAuto:"auto"};
+  for(const id in m){if($(id))$(id).textContent=tr(m[id])}
+  if($("exp"))$("exp").textContent=tr("export");
+  if($("imp"))$("imp").textContent=tr("import");
+  if($("lang"))$("lang").value=lang;
+}
 function fmt(x){x=+x;return x>=1000?x.toLocaleString(undefined,{maximumFractionDigits:2}):x>=10?x.toFixed(4):x>=1?x.toFixed(5):x.toFixed(6)}
 function ema(a,p){if(a.length<p)return a.at(-1)||0;let e=avg(a.slice(0,p)),k=2/(p+1);for(let i=p;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
 function emas(a,p){let o=Array(a.length).fill(NaN);if(a.length<p)return o;let e=avg(a.slice(0,p)),k=2/(p+1);o[p-1]=e;for(let i=p;i<a.length;i++){e=a[i]*k+e*(1-k);o[i]=e}return o}
@@ -97,7 +107,7 @@ function rsi(a,p=14){if(a.length<=p)return 50;let g=0,l=0;for(let i=1;i<=p;i++){
 function atr(k,p=14){let t=[];for(let i=1;i<k.length;i++){let h=+k[i][2],l=+k[i][3],pc=+k[i-1][4];t.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)))}return 100*avg(t.slice(-p))/(+k.at(-1)[4]||1)}
 function an(k,bars){let c=k.map(x=>+x[4]),v=k.map(x=>+x[5]),last=c.at(-1),e9=ema(c,9),e21=ema(c,21),R=rsi(c),pr=c[Math.max(0,c.length-1-bars)],m=pr?100*(last/pr-1):0,vr=v.at(-1)/(avg(v.slice(-21,-1))||1),t=(e9>e21?1:-1)+(last>e9?.5:-.5)+(R>57?.55:R<43?-.55:0)+(m>.35?.45:m<-.35?-.45:0);return{last,e9,e21,r:R,m,vr,t,a:atr(k)}}
 function pr(sc,a,h){let bonus=h==="1h"?(a<.35?13:a<.65?6:0):h==="4h"?(a<.55?10:a<.95?4:0):(a<.85?7:0),f=clamp(43-5.4*Math.abs(sc)+bonus,10,58),mass=100-f,p=1/(1+Math.exp(-.58*sc)),u=Math.round(mass*p),d=Math.round(mass*(1-p));f=100-u-d;let s=u>=d&&u>=f?"UP":d>=u&&d>=f?"DOWN":"FLAT",ar=[u,d,f].sort((a,b)=>b-a),conf=Math.round(clamp(24+(ar[0]-ar[1])*1.7,25,86));return{s,u,d,f,conf}}
-function text(s){return s==="UP"?"SALE":s==="DOWN"?"SCENDE":"RESTA LÌ"} function cls(s){return s==="UP"?"up":s==="DOWN"?"down":"range"}
+function text(s){return s==="UP"?tr("up"):s==="DOWN"?tr("down"):tr("flat")} function cls(s){return s==="UP"?"up":s==="DOWN"?"down":"range"}
 function levels(k){let r=k.slice(-64),last=+r.at(-1)[4],hi=r.map(x=>+x[2]),lo=r.map(x=>+x[3]),res=Math.max(...hi),sup=Math.min(...lo),sh=[],sl=[];for(let i=2;i<r.length-2;i++){let h=+r[i][2],l=+r[i][3];if(h>+r[i-1][2]&&h>+r[i-2][2]&&h>=+r[i+1][2]&&h>=+r[i+2][2])sh.push(h);if(l<+r[i-1][3]&&l<+r[i-2][3]&&l<=+r[i+1][3]&&l<=+r[i+2][3])sl.push(l)}let a=sh.filter(x=>x>last).sort((a,b)=>a-b),b=sl.filter(x=>x<last).sort((a,b)=>b-a);return{res:a[0]||res,sup:b[0]||sup}}
 async function api(p){for(const h of ["https://data-api.binance.vision","https://api1.binance.com","https://api2.binance.com","https://api3.binance.com","https://api.binance.com"]){const c=new AbortController(),tm=setTimeout(()=>c.abort(),5500);try{let r=await fetch(h+p,{cache:"no-store",signal:c.signal});clearTimeout(tm);if(r.ok)return await r.json()}catch(e){clearTimeout(tm)}}throw Error("dati non disponibili")}
 async function load(tf,s=sym,n=220){return api(`/api/v3/klines?symbol=${s}&interval=${tf}&limit=${n}`)}
@@ -105,7 +115,7 @@ async function bookLoad(){try{let d=await api(`/api/v3/depth?symbol=${sym}&limit
 function setSig(h,p){$("s"+h).textContent=text(p.s);$("s"+h).className=cls(p.s);$("p"+h).textContent=`SALE ${p.u}% • LÌ ${p.f}% • SCENDE ${p.d}% • forza ${p.conf}%`;$("u"+h).style.width=p.u+"%";$("f"+h).style.width=p.f+"%";$("d"+h).style.width=p.d+"%"}
 function recalc(){if(!req.every(x=>K[x]?.length))return;let a5=an(K["5m"],6),a15=an(K["15m"],4),a1=an(K["1h"],3),a4=an(K["4h"],2),bt=clamp((book.b-book.s)/18,-1.1,1.1),p1=pr(1.45*a5.t+1.35*a15.t+.8*a1.t+.2*a4.t+bt,a15.a,"1h"),p4=pr(.55*a5.t+1.2*a15.t+1.55*a1.t+.75*a4.t+.4*bt,a1.a,"4h"),p24=pr(.15*a5.t+.45*a15.t+1.25*a1.t+1.85*a4.t+.15*bt,a4.a,"24h"),lv=levels(K["15m"]);
 setSig("1",p1);setSig("4",p4);setSig("24",p24);$("buy").style.width=book.b+"%";$("sell").style.width=book.s+"%";$("bt").textContent=book.b.toFixed(0)+"%";$("st").textContent=book.s.toFixed(0)+"%";$("vol").textContent=a15.vr>1.8?"molto alto":a15.vr>1.25?"alto":a15.vr<.65?"basso":"normale";$("rsiTxt").textContent=a15.r>70?"molto alto":a15.r<30?"molto basso":a15.r>60?"un po' alto":a15.r<40?"un po' basso":"normale";$("res").textContent="$"+fmt(lv.res);$("sup").textContent="$"+fmt(lv.sup);
-let coin=sym.replace("USDT",""),dir=p1.s==="UP"?"più forza verso l'alto":p1.s==="DOWN"?"più pressione verso il basso":"nessuna direzione chiara",press=book.b>58?"i compratori sono più presenti":book.s>58?"i venditori sono più presenti":"compratori e venditori sono equilibrati";$("state").textContent=(p1.s==="UP"?"🟢 ":p1.s==="DOWN"?"🔴 ":"🟡 ")+(p1.s==="UP"?"PIÙ FORZA IN SALITA":p1.s==="DOWN"?"PIÙ FORZA IN DISCESA":"INDECISO");$("state").className="state "+cls(p1.s);$("summary").textContent=`${coin}: ${dir}; ${press}. Sopra $${fmt(lv.res)} la salita sarebbe più credibile, sotto $${fmt(lv.sup)} aumenterebbe il rischio di discesa.`;record(a15.last,p1,p4,p24)}
+let coin=sym.replace("USDT",""),dir=p1.s==="UP"?"più forza verso l'alto":p1.s==="DOWN"?"più pressione verso il basso":"nessuna direzione chiara",press=book.b>58?"i compratori sono più presenti":book.s>58?"i venditori sono più presenti":"compratori e venditori sono equilibrati";$("state").textContent=(p1.s==="UP"?"🟢 ":p1.s==="DOWN"?"🔴 ":"🟡 ")+(p1.s==="UP"?tr("strongUp"):p1.s==="DOWN"?tr("strongDown"):tr("uncertain"));$("state").className="state "+cls(p1.s);$("summary").textContent=`${coin}: ${dir}; ${press}. Sopra $${fmt(lv.res)} la salita sarebbe più credibile, sotto $${fmt(lv.sup)} aumenterebbe il rischio di discesa.`;record(a15.last,p1,p4,p24)}
 function draw(){let data=K[tf];if(!data?.length)return;let cv=$("chart"),ctx=cv.getContext("2d"),W=cv.width,H=cv.height;view=clamp(view,18,Math.min(180,data.length));off=clamp(off,0,Math.max(0,data.length-view));let ei=Math.max(view,data.length-off),si=Math.max(0,ei-view),c=data.slice(si,ei),cl=c.map(x=>+x[4]),e9=emas(cl,9),e21=emas(cl,21),hi=Math.max(...c.map(x=>+x[2])),lo=Math.min(...c.map(x=>+x[3])),pad=(hi-lo)*.07||1,top=20,bot=365,vtop=390,vbot=455,left=8,right=72,pw=W-left-right,ph=bot-top,y=p=>top+(hi+pad-p)/(hi-lo+2*pad)*ph,x=i=>left+(i+.5)*pw/c.length,cw=Math.max(3,pw/c.length*.62),mv=Math.max(...c.map(x=>+x[5]))||1;geom={si,ei,left,right,pw,count:c.length,W,vbot};ctx.fillStyle="#0f151e";ctx.fillRect(0,0,W,H);ctx.strokeStyle="#263143";ctx.fillStyle="#8f9bad";ctx.font="11px system-ui";for(let i=0;i<6;i++){let yy=top+i*ph/5;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(W-right,yy);ctx.stroke();ctx.fillText(fmt(hi+pad-(hi-lo+2*pad)*i/5),W-right+5,yy+4)}let every=Math.max(1,Math.ceil(c.length/6));c.forEach((k,i)=>{if(i%every===0||i===c.length-1){let dt=new Date(+k[0]),lab=(tf==="1h"?dt.toLocaleDateString(undefined,{day:"2-digit",month:"2-digit"})+" ":"")+dt.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit",hour12:false});ctx.textAlign="center";ctx.fillStyle="#8f9bad";ctx.fillText(lab,x(i),487)}});ctx.textAlign="start";c.forEach((k,i)=>{let o=+k[1],h=+k[2],l=+k[3],cc=+k[4],xx=x(i),col=cc>=o?"#66dfa0":"#ff7c87";if(sel===si+i){ctx.fillStyle="rgba(245,215,111,.1)";ctx.fillRect(xx-8,top,16,vbot-top)}ctx.strokeStyle=col;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(xx,y(h));ctx.lineTo(xx,y(l));ctx.stroke();ctx.fillRect(xx-cw/2,Math.min(y(o),y(cc)),cw,Math.max(1.5,Math.abs(y(o)-y(cc))));ctx.globalAlpha=.35;ctx.fillRect(xx-cw/2,vbot-(+k[5]/mv)*(vbot-vtop),cw,(+k[5]/mv)*(vbot-vtop));ctx.globalAlpha=1});function line(a,col){ctx.strokeStyle=col;ctx.beginPath();let go=false;a.forEach((v,i)=>{if(!Number.isFinite(v))return;go?ctx.lineTo(x(i),y(v)):(ctx.moveTo(x(i),y(v)),go=true)});ctx.stroke()}line(e9,"#58d3ea");line(e21,"#f5d76f");let idx=sel!=null&&sel>=si&&sel<ei?sel:ei-1,k=data[idx],dt=new Date(+k[0]);$("ohlc").textContent=`${dt.toLocaleString()} • O ${fmt(k[1])} H ${fmt(k[2])} L ${fmt(k[3])} C ${fmt(k[4])}`}
 function idxAt(clientX,clientY){if(!geom)return null;let r=$("chart").getBoundingClientRect(),x=(clientX-r.left)*1000/r.width,y=(clientY-r.top)*500/r.height;if(x<geom.left||x>geom.W-geom.right||y>geom.vbot)return null;return geom.si+clamp(Math.floor((x-geom.left)/geom.pw*geom.count),0,geom.count-1)}
 function zoom(n){view=clamp(Math.round(n),18,180);draw()}$("plus").onclick=()=>zoom(view*.78);$("minus").onclick=()=>zoom(view*1.28);$("reset").onclick=()=>{view=80;off=0;sel=null;draw()};
@@ -122,10 +132,10 @@ $("exp").onclick=()=>{let b=new Blob([JSON.stringify({predictions:preds()},null,
 async function seed(){sym=$("sym").value;tf=$("tf").value;view=80;off=0;sel=null;let need=[...new Set([...req,tf])],all=await Promise.all(need.map(x=>load(x)));K={};need.forEach((x,i)=>K[x]=all[i]);let t=await api(`/api/v3/ticker/24hr?symbol=${sym}`);lastP=+t.lastPrice;$("price").textContent="$"+fmt(lastP);$("chg").textContent=`24h ${+t.priceChangePercent>=0?"+":""}${(+t.priceChangePercent).toFixed(2)}%`;await bookLoad();recalc();draw();renderP();openWS()}
 function apply(k){let row=[k.t,String(k.o),String(k.h),String(k.l),String(k.c),String(k.v),k.T];if(!K[k.i])return;let a=K[k.i];if(+a.at(-1)[0]===k.t)a[a.length-1]=row;else{a.push(row);if(a.length>240)a.shift()}}
 function openWS(){if(ws)try{ws.onclose=null,ws.close()}catch{}let s=sym.toLowerCase(),streams=[s+"@ticker",...new Set([...req,tf])].map(x=>s+"@kline_"+x);ws=new WebSocket("wss://stream.binance.com:9443/stream?streams="+streams.join("/"));$("live").textContent="CONNESSIONE";$("dot").className="dot";ws.onopen=()=>{$("live").textContent="LIVE";$("dot").className="dot on"};ws.onmessage=e=>{let d=JSON.parse(e.data).data;if(d.e==="24hrTicker"){$("price").textContent="$"+fmt(d.c);$("chg").textContent=`24h ${+d.P>=0?"+":""}${(+d.P).toFixed(2)}%`}else if(d.e==="kline"){apply(d.k);if(d.k.i===tf)draw();recalc()}};ws.onerror=()=>{$("dot").className="dot bad";$("live").textContent="ERRORE"};ws.onclose=()=>setTimeout(openWS,3000)}
-$("sym").onchange=seed;$("tf").onchange=seed;setInterval(async()=>{await bookLoad();recalc()},5000);setInterval(evaluate,120000);setInterval(renderP,60000);
+$("sym").onchange=seed;$("tf").onchange=seed;$("lang").onchange=()=>{lang=$("lang").value;localStorage.setItem("cs_lang",lang);applyLang();recalc();renderP();draw()};setInterval(async()=>{await bookLoad();recalc()},5000);setInterval(evaluate,120000);setInterval(renderP,60000);
 let promptEvent=null;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptEvent=e;$("install").style.display=""});$("install").onclick=async()=>{if(promptEvent){promptEvent.prompt();await promptEvent.userChoice;promptEvent=null;$("install").style.display="none"}};
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
-seed();setTimeout(evaluate,3500);
+applyLang();seed().catch(()=>{$("dot").className="dot bad";$("summary").textContent=tr("noData")});setTimeout(evaluate,3500);
 </script>
 </body>
 </html>
