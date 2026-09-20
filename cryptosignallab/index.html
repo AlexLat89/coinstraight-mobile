@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CryptoSignalLab Web</title>
+<style>
+:root{--bg:#090d13;--card:#141a23;--c2:#1b2431;--line:#2a3545;--txt:#eef4f8;--mut:#98a6b8;--g:#66dfa0;--r:#ff7c87;--y:#f5d76f;--c:#58d3ea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+.wrap{max-width:1080px;margin:auto;padding:12px}header{position:sticky;top:0;z-index:20;background:rgba(9,13,19,.96);backdrop-filter:blur(10px);padding:10px 0}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}h1{font-size:22px;color:var(--c);margin:0}.sub{color:var(--mut);font-size:12px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}select,button{background:var(--c2);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px;font-weight:700}select{min-width:170px}button{cursor:pointer}
+.live{display:flex;align-items:center;gap:7px;font-size:12px}.dot{width:9px;height:9px;border-radius:50%;background:#777}.dot.on{background:var(--g)}.dot.bad{background:var(--r)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:14px;margin-top:10px}.hero{background:linear-gradient(#151d28,#111721)}
+.price{font-size:44px;font-weight:900}.state{font-size:22px;font-weight:900;margin:6px 0}.summary{font-size:15px;line-height:1.5}.up{color:var(--g)}.down{color:var(--r)}.range{color:var(--y)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sig{background:var(--c2);padding:11px;border-radius:12px}.sig b{display:block;font-size:21px;margin:5px 0}.bar{height:8px;display:flex;border-radius:99px;overflow:hidden;background:#0c1118;margin-top:8px}.bu{background:var(--g)}.bf{background:var(--y)}.bd{background:var(--r)}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}
+.press{height:17px;border-radius:99px;overflow:hidden;display:flex;background:#0d1219;margin:10px 0}.buy{background:var(--g)}.sell{background:var(--r)}
+canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12px;touch-action:none}.hint{font-size:11px;color:var(--mut);margin-top:7px}
+.tablewrap{overflow:auto}.tbl{width:100%;border-collapse:collapse;font-size:12px}.tbl th,.tbl td{padding:8px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}.tbl th{color:var(--mut)}
+.ok{color:var(--g);font-weight:800}.no{color:var(--r);font-weight:800}.wait{color:var(--y);font-weight:800}
+@media(max-width:720px){.grid3{grid-template-columns:1fr}.price{font-size:38px}canvas{height:390px}.controls select{flex:1;min-width:145px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div class="top">
+  <div><h1>CRYPTOSIGNALLAB WEB</h1><div class="sub">Crypto • Forex • Oro • Petrolio • SpaceX — nessuna API key</div></div>
+  <div class="live"><span id="dot" class="dot"></span><span id="live">CONNESSIONE</span></div>
+</div>
+<div class="controls">
+<select id="sym">
+<optgroup label="CRYPTO — Binance">
+<option value="SOLUSDT">SOL / USDT</option><option value="BTCUSDT">BTC / USDT</option><option value="ETHUSDT">ETH / USDT</option><option value="XRPUSDT">XRP / USDT</option><option value="ADAUSDT">ADA / USDT</option><option value="DOGEUSDT">DOGE / USDT</option><option value="BNBUSDT">BNB / USDT</option>
+</optgroup>
+<optgroup label="FOREX — biquote">
+<option value="EURUSD">EUR / USD</option><option value="GBPUSD">GBP / USD</option><option value="AUDUSD">AUD / USD</option><option value="USDJPY">USD / JPY</option><option value="USDCAD">USD / CAD</option><option value="USDCHF">USD / CHF</option><option value="NZDUSD">NZD / USD</option><option value="EURGBP">EUR / GBP</option>
+</optgroup>
+<optgroup label="MATERIE PRIME — biquote">
+<option value="XAUUSD">ORO / USD</option><option value="USOIL">PETROLIO WTI</option><option value="UKOIL">PETROLIO BRENT</option>
+</optgroup>
+<optgroup label="AZIONI">
+<option value="SPCX">SpaceX (SPCX)</option>
+</optgroup>
+</select>
+<select id="tf"><option value="1m">1 minuto</option><option value="5m" selected>5 minuti</option><option value="15m">15 minuti</option><option value="1h">1 ora</option></select>
+<button id="refresh">AGGIORNA</button>
+</div>
+</header>
+
+<div class="card hero">
+<div class="sub">PREZZO ADESSO</div><div id="price" class="price">--</div><div id="chg" class="sub">--</div>
+<div id="state" class="state range">ATTENDO DATI</div>
+<div id="summary" class="summary">Caricamento mercato...</div>
+</div>
+
+<div class="card">
+<div class="sub">COSA POTREBBE SUCCEDERE</div>
+<div class="grid3">
+<div class="sig"><span class="sub">1 ORA</span><b id="s1" class="range">--</b><span id="p1" class="sub">--</span><div class="bar"><i id="u1" class="bu"></i><i id="f1" class="bf"></i><i id="d1" class="bd"></i></div></div>
+<div class="sig"><span class="sub">4 ORE</span><b id="s4" class="range">--</b><span id="p4" class="sub">--</span><div class="bar"><i id="u4" class="bu"></i><i id="f4" class="bf"></i><i id="d4" class="bd"></i></div></div>
+<div class="sig"><span class="sub">24 ORE</span><b id="s24" class="range">--</b><span id="p24" class="sub">--</span><div class="bar"><i id="u24" class="bu"></i><i id="f24" class="bf"></i><i id="d24" class="bd"></i></div></div>
+</div>
+</div>
+
+<div class="card">
+<div id="pressureTitle" class="sub">PRESSIONE MERCATO</div><div class="press"><i id="buy" class="buy"></i><i id="sell" class="sell"></i></div>
+<div class="row"><span id="buyLabel">Compratori</span><b id="bt">--</b></div><div class="row"><span id="sellLabel">Venditori</span><b id="st">--</b></div>
+<div class="row"><span>Volume</span><b id="vol">--</b></div><div class="row"><span>Prezzo tirato?</span><b id="rsiTxt">--</b></div>
+</div>
+
+<div class="card">
+<div class="top"><div><div class="sub">CANDELE</div><div id="ohlc" class="sub">--</div></div><div><button id="minus">−</button><button id="plus">+</button><button id="reset">RESET</button></div></div>
+<canvas id="chart" width="1000" height="500"></canvas>
+<div class="hint">Rotella mouse = zoom • trascina = scorri • doppio click = reset</div>
+</div>
+
+<div class="card">
+<div class="sub">LIVELLI DA GUARDARE</div>
+<div class="row"><span>Se supera</span><b id="res" class="up">--</b></div>
+<div class="row"><span>Se scende sotto</span><b id="sup" class="down">--</b></div>
+</div>
+
+<div class="card">
+<div class="top"><div><div class="sub">STORICO PREVISIONI</div><b>Controllo automatico 1h / 4h / 24h</b></div><button id="clearPred">AZZERA STORICO</button></div>
+<div class="tablewrap"><table class="tbl"><thead><tr><th>Ora</th><th>Prezzo</th><th>1h</th><th>Esito</th><th>4h</th><th>Esito</th><th>24h</th><th>Esito</th></tr></thead><tbody id="tbody"></tbody></table></div>
+</div>
+
+<div class="hint">Crypto: Binance spot. Forex/oro/petrolio: biquote. Su forex e CFD la pressione rialzista/ribassista e stimata dal modello, non da un order book centrale. Le percentuali sono stime euristiche e non garantiscono movimenti futuri. L'app non esegue ordini.</div>
+</div>
+
+<script>
+const $=x=>document.getElementById(x),clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),avg=a=>a.reduce((s,v)=>s+v,0)/(a.length||1);
+const ASSETS={
+SOLUSDT:{p:"binance",name:"SOL",prefix:"$"},BTCUSDT:{p:"binance",name:"BTC",prefix:"$"},ETHUSDT:{p:"binance",name:"ETH",prefix:"$"},XRPUSDT:{p:"binance",name:"XRP",prefix:"$"},ADAUSDT:{p:"binance",name:"ADA",prefix:"$"},DOGEUSDT:{p:"binance",name:"DOGE",prefix:"$"},BNBUSDT:{p:"binance",name:"BNB",prefix:"$"},
+EURUSD:{p:"bq",name:"EUR/USD",bq:"EURUSD",prefix:""},GBPUSD:{p:"bq",name:"GBP/USD",bq:"GBPUSD",prefix:""},AUDUSD:{p:"bq",name:"AUD/USD",bq:"AUDUSD",prefix:""},USDJPY:{p:"bq",name:"USD/JPY",bq:"USDJPY",prefix:""},USDCAD:{p:"bq",name:"USD/CAD",bq:"USDCAD",prefix:""},USDCHF:{p:"bq",name:"USD/CHF",bq:"USDCHF",prefix:""},NZDUSD:{p:"bq",name:"NZD/USD",bq:"NZDUSD",prefix:""},EURGBP:{p:"bq",name:"EUR/GBP",bq:"EURGBP",prefix:""},
+XAUUSD:{p:"bq",name:"ORO",bq:"XAUUSD",prefix:"$"},USOIL:{p:"bq",name:"WTI",bq:"USOIL",prefix:"$"},UKOIL:{p:"bq",name:"BRENT",bq:"UKOIL",prefix:"$"},SPCX:{p:"bq",name:"SPACEX",bq:"SPCX",prefix:"$"}
+};
+let sym="SOLUSDT",tf="5m",K={},ws=null,poll=null,lastPrice=null,book={b:50,s:50,ok:false},view=80,off=0,drag=false,sx=0,so=0,spcxResolved=null;
+const req=["5m","15m","1h","4h"],PKEY="csl_web_predictions_v1",PINT=15*60*1000;
+function asset(s=sym){return ASSETS[s]||ASSETS.SOLUSDT}
+function isCrypto(s=sym){return asset(s).p==="binance"}
+function fmt(x){x=+x;if(!Number.isFinite(x))return"--";return x>=1000?x.toLocaleString(undefined,{maximumFractionDigits:2}):x>=10?x.toFixed(4):x>=1?x.toFixed(5):x.toFixed(6)}
+function px(x,s=sym){return (asset(s).prefix||"")+fmt(x)}
+function ema(a,p){if(a.length<p)return a.at(-1)||0;let e=avg(a.slice(0,p)),k=2/(p+1);for(let i=p;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
+function emas(a,p){let o=Array(a.length).fill(NaN);if(a.length<p)return o;let e=avg(a.slice(0,p)),k=2/(p+1);o[p-1]=e;for(let i=p;i<a.length;i++){e=a[i]*k+e*(1-k);o[i]=e}return o}
+function rsi(a,p=14){if(a.length<=p)return 50;let g=0,l=0;for(let i=1;i<=p;i++){let d=a[i]-a[i-1];d>=0?g+=d:l-=d}g/=p;l/=p;for(let i=p+1;i<a.length;i++){let d=a[i]-a[i-1];g=(g*(p-1)+Math.max(d,0))/p;l=(l*(p-1)+Math.max(-d,0))/p}return l?100-100/(1+g/l):100}
+function atr(k,p=14){let t=[];for(let i=1;i<k.length;i++){let h=+k[i][2],l=+k[i][3],pc=+k[i-1][4];t.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)))}return 100*avg(t.slice(-p))/(+k.at(-1)[4]||1)}
+function analyze(k,bars){let c=k.map(x=>+x[4]),v=k.map(x=>+x[5]),last=c.at(-1),e9=ema(c,9),e21=ema(c,21),R=rsi(c),pr=c[Math.max(0,c.length-1-bars)],m=pr?100*(last/pr-1):0,vr=v.at(-1)/(avg(v.slice(-21,-1))||1),t=(e9>e21?1:-1)+(last>e9?.5:-.5)+(R>57?.55:R<43?-.55:0)+(m>.35?.45:m<-.35?-.45:0);return{last,e9,e21,r:R,m,vr,t,a:atr(k)}}
+function probs(sc,a,h){let bonus=h==="1h"?(a<.35?13:a<.65?6:0):h==="4h"?(a<.55?10:a<.95?4:0):(a<.85?7:0),f=clamp(43-5.4*Math.abs(sc)+bonus,10,58),mass=100-f,p=1/(1+Math.exp(-.58*sc)),u=Math.round(mass*p),d=Math.round(mass*(1-p));f=100-u-d;let sig=u>=d&&u>=f?"UP":d>=u&&d>=f?"DOWN":"FLAT",ar=[u,d,f].sort((a,b)=>b-a),conf=Math.round(clamp(24+(ar[0]-ar[1])*1.7,25,86));return{sig,u,d,f,conf}}
+function text(s){return s==="UP"?"SALE":s==="DOWN"?"SCENDE":"RESTA LI"}function cls(s){return s==="UP"?"up":s==="DOWN"?"down":"range"}
+function levels(k){let r=k.slice(-64),last=+r.at(-1)[4],hi=r.map(x=>+x[2]),lo=r.map(x=>+x[3]),res=Math.max(...hi),sup=Math.min(...lo),sh=[],sl=[];for(let i=2;i<r.length-2;i++){let h=+r[i][2],l=+r[i][3];if(h>+r[i-1][2]&&h>+r[i-2][2]&&h>=+r[i+1][2]&&h>=+r[i+2][2])sh.push(h);if(l<+r[i-1][3]&&l<+r[i-2][3]&&l<=+r[i+1][3]&&l<=+r[i+2][3])sl.push(l)}let a=sh.filter(x=>x>last).sort((a,b)=>a-b),b=sl.filter(x=>x<last).sort((a,b)=>b-a);return{res:a[0]||res,sup:b[0]||sup}}
+async function jfetch(url,ms=9000){const c=new AbortController(),tm=setTimeout(()=>c.abort(),ms);try{let r=await fetch(url,{cache:"no-store",signal:c.signal});clearTimeout(tm);if(!r.ok)throw Error("HTTP "+r.status);return await r.json()}catch(e){clearTimeout(tm);throw e}}
+async function bin(path){let err;for(const h of ["https://data-api.binance.vision","https://api1.binance.com","https://api2.binance.com","https://api3.binance.com","https://api.binance.com"]){try{return await jfetch(h+path,6000)}catch(e){err=e}}throw err||Error("Binance non disponibile")}
+async function resolveBq(a){if(a.bq!=="SPCX")return a.bq;if(spcxResolved)return spcxResolved;try{await jfetch("https://biquote.io/api/SPCX",5000);spcxResolved="SPCX";return spcxResolved}catch{}try{let d=await jfetch("https://biquote.io/api/symbols/search?q=SpaceX&limit=20",6000),arr=Array.isArray(d)?d:(d.items||d.symbols||[]);let x=arr.find(z=>String(z.description||z.name||"").toLowerCase().includes("spacex"));if(x){spcxResolved=x.name||x.symbol;return spcxResolved}}catch{}throw Error("SpaceX non e disponibile sulla fonte gratuita in questo momento")}
+function bqRows(d){let bars=Array.isArray(d)?d:(d.bars||d.data||[]);return bars.map(b=>{let t=b.openTime??b.time??b.timestamp;if(typeof t==="string")t=Date.parse(t);else{t=+t;if(t<1e12)t*=1000}return[t,String(b.open),String(b.high),String(b.low),String(b.close),String(b.tickVolume??b.volume??0),t+60000]}).filter(r=>Number.isFinite(+r[0])&&Number.isFinite(+r[4])).sort((a,b)=>+a[0]-+b[0])}
+async function loadK(intv,limit=220,s=sym){let a=asset(s);if(a.p==="binance")return bin("/api/v3/klines?symbol="+s+"&interval="+intv+"&limit="+limit);let bs=await resolveBq(a),d=await jfetch("https://biquote.io/api/"+encodeURIComponent(bs)+"/ohlc?interval="+intv+"&limit="+limit,9000),rows=bqRows(d);if(!rows.length)throw Error("Nessuna candela disponibile");return rows.slice(-limit)}
+async function quote(){let a=asset();if(a.p==="binance"){let t=await bin("/api/v3/ticker/24hr?symbol="+sym);return{p:+t.lastPrice,ch:+t.priceChangePercent,hi:+t.highPrice,lo:+t.lowPrice,state:"open"}}let bs=await resolveBq(a),d=await jfetch("https://biquote.io/api/"+encodeURIComponent(bs),7000),p=+(d.mid??d.last??((+d.bid + +d.ask)/2)),ch=+(d.dayDiffPercent??d.changePercent),hi=+(d.dayHigh??d.high??p),lo=+(d.dayLow??d.low??p);return{p,ch,hi,lo,state:d.marketState||"open",age:+d.quoteAgeSeconds||0}}
+async function loadBook(){if(!isCrypto()){book={b:50,s:50,ok:false};return}try{let d=await bin("/api/v3/depth?symbol="+sym+"&limit=100"),b=0,a=0;d.bids.forEach(x=>b+=+x[0]*+x[1]);d.asks.forEach(x=>a+=+x[0]*+x[1]);book.b=100*b/(a+b);book.s=100-book.b;book.ok=true}catch{book={b:50,s:50,ok:false}}}
+function setSig(h,p){$("s"+h).textContent=text(p.sig);$("s"+h).className=cls(p.sig);$("p"+h).textContent="sale "+p.u+"% • laterale "+p.f+"% • scende "+p.d+"% • forza "+p.conf+"%";$("u"+h).style.width=p.u+"%";$("f"+h).style.width=p.f+"%";$("d"+h).style.width=p.d+"%"}
+function recalc(){if(!req.every(x=>K[x]?.length))return;let a5=analyze(K["5m"],6),a15=analyze(K["15m"],4),a1=analyze(K["1h"],3),a4=analyze(K["4h"],2);if(!isCrypto()){let ps=.38*a5.t+.34*a15.t+.2*a1.t+.08*a4.t,b=clamp(50+ps*7.5,15,85);book={b,s:100-b,ok:true}}let bt=book.ok?clamp((book.b-book.s)/(isCrypto()?18:28),-1.1,1.1):0,p1=probs(1.45*a5.t+1.35*a15.t+.8*a1.t+.2*a4.t+bt,a15.a,"1h"),p4=probs(.55*a5.t+1.2*a15.t+1.55*a1.t+.75*a4.t+.4*bt,a1.a,"4h"),p24=probs(.15*a5.t+.45*a15.t+1.25*a1.t+1.85*a4.t+.15*bt,a4.a,"24h"),lv=levels(K["15m"]);
+setSig("1",p1);setSig("4",p4);setSig("24",p24);$("buy").style.width=book.b+"%";$("sell").style.width=book.s+"%";$("bt").textContent=book.b.toFixed(0)+"%";$("st").textContent=book.s.toFixed(0)+"%";
+$("buyLabel").textContent=isCrypto()?"Compratori":"Rialzista";$("sellLabel").textContent=isCrypto()?"Venditori":"Ribassista";$("pressureTitle").textContent=isCrypto()?"COMPRATORI / VENDITORI":"PRESSIONE STIMATA DEL MERCATO";
+let hasVol=K["15m"].some(x=>+x[5]>0);$("vol").textContent=hasVol?(a15.vr>1.8?"molto alto":a15.vr>1.25?"alto":a15.vr<.65?"basso":"normale"):"N/D";$("rsiTxt").textContent=a15.r>70?"molto alto":a15.r<30?"molto basso":a15.r>60?"un po alto":a15.r<40?"un po basso":"normale";$("res").textContent=px(lv.res);$("sup").textContent=px(lv.sup);
+$("state").textContent=(p1.sig==="UP"?"PIU FORZA IN SALITA":p1.sig==="DOWN"?"PIU PRESSIONE IN DISCESA":"INDECISO");$("state").className="state "+cls(p1.sig);
+let pr=isCrypto()?(book.b>58?"compratori piu presenti":book.s>58?"venditori piu presenti":"book abbastanza equilibrato"):(book.b>58?"pressione stimata piu rialzista":book.s>58?"pressione stimata piu ribassista":"pressione stimata equilibrata");
+$("summary").textContent=asset().name+": "+text(p1.sig).toLowerCase()+" nel breve; "+pr+". Sopra "+px(lv.res)+" la salita sarebbe piu credibile; sotto "+px(lv.sup)+" aumenta il rischio di discesa.";
+record(a15.last,p1,p4,p24)}
+function updateQuote(q){if(!Number.isFinite(q.p))return;lastPrice=q.p;$("price").textContent=px(q.p);let ch=Number.isFinite(q.ch)?((q.ch>=0?"+":"")+q.ch.toFixed(2)+"%"):"--";$("chg").textContent=(q.state==="closed"?"Mercato chiuso • ":"")+"variazione "+ch+" • max "+px(q.hi)+" • min "+px(q.lo)}
+function draw(){let data=K[tf];if(!data?.length)return;let cv=$("chart"),ctx=cv.getContext("2d"),W=cv.width,H=cv.height;view=clamp(view,18,Math.min(180,data.length));off=clamp(off,0,Math.max(0,data.length-view));let ei=Math.max(view,data.length-off),si=Math.max(0,ei-view),c=data.slice(si,ei),cl=c.map(x=>+x[4]),e9=emas(cl,9),e21=emas(cl,21),hi=Math.max(...c.map(x=>+x[2])),lo=Math.min(...c.map(x=>+x[3])),pad=(hi-lo)*.07||1,top=20,bot=390,vtop=415,vbot=465,left=8,right=75,pw=W-left-right,ph=bot-top,y=p=>top+(hi+pad-p)/(hi-lo+2*pad)*ph,x=i=>left+(i+.5)*pw/c.length,cw=Math.max(3,pw/c.length*.62),mv=Math.max(...c.map(x=>+x[5]))||1;ctx.fillStyle="#0f151e";ctx.fillRect(0,0,W,H);ctx.strokeStyle="#263143";ctx.fillStyle="#8f9bad";ctx.font="11px system-ui";for(let i=0;i<6;i++){let yy=top+i*ph/5;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(W-right,yy);ctx.stroke();ctx.fillText(fmt(hi+pad-(hi-lo+2*pad)*i/5),W-right+5,yy+4)}c.forEach((k,i)=>{let o=+k[1],h=+k[2],l=+k[3],cc=+k[4],xx=x(i),col=cc>=o?"#66dfa0":"#ff7c87";ctx.strokeStyle=col;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(xx,y(h));ctx.lineTo(xx,y(l));ctx.stroke();ctx.fillRect(xx-cw/2,Math.min(y(o),y(cc)),cw,Math.max(1.5,Math.abs(y(o)-y(cc))));if(+k[5]>0){ctx.globalAlpha=.28;ctx.fillRect(xx-cw/2,vbot-(+k[5]/mv)*(vbot-vtop),cw,(+k[5]/mv)*(vbot-vtop));ctx.globalAlpha=1}});function line(a,col){ctx.strokeStyle=col;ctx.beginPath();let go=false;a.forEach((v,i)=>{if(!Number.isFinite(v))return;go?ctx.lineTo(x(i),y(v)):(ctx.moveTo(x(i),y(v)),go=true)});ctx.stroke()}line(e9,"#58d3ea");line(e21,"#f5d76f");let k=c.at(-1),dt=new Date(+k[0]);$("ohlc").textContent=dt.toLocaleString()+" • O "+fmt(k[1])+" H "+fmt(k[2])+" L "+fmt(k[3])+" C "+fmt(k[4])}
+function zoom(n){view=clamp(Math.round(n),18,180);draw()}$("plus").onclick=()=>zoom(view*.78);$("minus").onclick=()=>zoom(view*1.28);$("reset").onclick=()=>{view=80;off=0;draw()};let cv=$("chart");cv.addEventListener("wheel",e=>{e.preventDefault();zoom(view*(e.deltaY<0?.82:1.22))},{passive:false});cv.onmousedown=e=>{drag=true;sx=e.clientX;so=off};window.onmousemove=e=>{if(!drag)return;let r=cv.getBoundingClientRect(),per=(r.width*.92)/view;off=clamp(so+Math.round((e.clientX-sx)/Math.max(2,per)),0,Math.max(0,(K[tf]?.length||0)-view));draw()};window.onmouseup=()=>drag=false;cv.ondblclick=()=>{$("reset").click()};
+function preds(){try{return JSON.parse(localStorage.getItem(PKEY)||"[]")}catch{return[]}}function saveP(a){localStorage.setItem(PKEY,JSON.stringify(a.slice(-800)))}
+function actual(m,h){let t=h==="1h"?.35:h==="4h"?.75:1.4;return m>t?"UP":m<-t?"DOWN":"FLAT"}
+function record(price,a,b,c){let now=Date.now(),bucket=Math.floor(now/PINT),P=preds();if(P.some(x=>x.sym===sym&&x.bucket===bucket))return;P.push({id:sym+"-"+bucket,bucket,ts:now,sym,price,s1:a.sig,s4:b.sig,s24:c.sig,r1:null,r4:null,r24:null,o1:null,o4:null,o24:null,m1:null,m4:null,m24:null});saveP(P);renderP()}
+async function histPrice(s,t){let a=asset(s);try{if(a.p==="binance"){let d=await bin("/api/v3/klines?symbol="+s+"&interval=1m&startTime="+Math.floor(t/60000)*60000+"&limit=2");return d?.length?+d[0][4]:null}let bs=await resolveBq(a),from=new Date(t-10*60000).toISOString(),to=new Date(t+10*60000).toISOString(),d=await jfetch("https://biquote.io/api/"+encodeURIComponent(bs)+"/ohlc?interval=1m&limit=100&from="+encodeURIComponent(from)+"&to="+encodeURIComponent(to),9000),r=bqRows(d);if(!r.length)return null;let best=r[0],dist=Math.abs(+best[0]-t);for(const x of r){let dd=Math.abs(+x[0]-t);if(dd<dist){best=x;dist=dd}}return +best[4]}catch{return null}}
+async function evaluate(){let P=preds(),now=Date.now(),changed=false,n=0;for(const r of P){for(const z of [["1h",3600000,"r1","o1","m1","s1"],["4h",14400000,"r4","o4","m4","s4"],["24h",86400000,"r24","o24","m24","s24"]]){let[h,d,rf,of,mf,sf]=z;if(r[rf]==null&&now>=r.ts+d&&n<20){let p=await histPrice(r.sym,r.ts+d);if(p!=null){let m=(p/r.price-1)*100,a=actual(m,h);r[rf]=a;r[of]=a===r[sf];r[mf]=m;changed=true;n++}}}}if(changed)saveP(P);renderP()}
+function cell(r,o,m){return r==null?'<span class="wait">ATTESA</span>':'<span class="'+(o?"ok":"no")+'">'+text(r)+" "+(o?"✓":"✗")+'</span> <span class="sub">('+(m>=0?"+":"")+Number(m).toFixed(2)+'%)</span>'}
+function renderP(){let P=preds().filter(x=>x.sym===sym);$("tbody").innerHTML=[...P].reverse().slice(0,50).map(r=>'<tr><td>'+new Date(r.ts).toLocaleString()+'</td><td>'+px(r.price,r.sym)+'</td><td>'+text(r.s1)+'</td><td>'+cell(r.r1,r.o1,r.m1)+'</td><td>'+text(r.s4)+'</td><td>'+cell(r.r4,r.o4,r.m4)+'</td><td>'+text(r.s24)+'</td><td>'+cell(r.r24,r.o24,r.m24)+'</td></tr>').join("")||'<tr><td colspan="8">Nessuna previsione ancora.</td></tr>'}
+$("clearPred").onclick=()=>{if(confirm("Azzero lo storico previsioni?")){localStorage.removeItem(PKEY);renderP()}};
+async function refreshAll(){let needed=[...new Set([...req,tf])],all=await Promise.all(needed.map(x=>loadK(x)));K={};needed.forEach((x,i)=>K[x]=all[i]);await loadBook();let q=await quote();updateQuote(q);recalc();draw();renderP();$("dot").className="dot on";$("live").textContent=q.state==="closed"?"CHIUSO":"LIVE"}
+function stop(){if(ws){try{ws.onclose=null;ws.close()}catch{}ws=null}if(poll){clearInterval(poll);poll=null}}
+function startCryptoWS(){let s=sym.toLowerCase(),streams=[s+"@ticker",...new Set([...req,tf])].map(x=>s+"@kline_"+x);try{ws=new WebSocket("wss://data-stream.binance.vision/stream?streams="+streams.join("/"))}catch{return}ws.onopen=()=>{$("dot").className="dot on";$("live").textContent="LIVE"};ws.onmessage=e=>{let d=JSON.parse(e.data).data;if(d.e==="24hrTicker")updateQuote({p:+d.c,ch:+d.P,hi:+d.h,lo:+d.l,state:"open"});else if(d.e==="kline"){let k=d.k,row=[k.t,String(k.o),String(k.h),String(k.l),String(k.c),String(k.v),k.T];if(K[k.i]){let a=K[k.i];if(+a.at(-1)[0]===k.t)a[a.length-1]=row;else{a.push(row);if(a.length>240)a.shift()}}if(k.i===tf)draw();recalc()}};ws.onerror=()=>{$("dot").className="dot bad";$("live").textContent="REST"}}
+async function start(){stop();sym=$("sym").value;tf=$("tf").value;view=80;off=0;K={};$("dot").className="dot";$("live").textContent="CONNESSIONE";$("summary").textContent="Carico "+asset().name+"...";try{await refreshAll();if(isCrypto())startCryptoWS();poll=setInterval(async()=>{try{if(!isCrypto()){await refreshAll()}else{await loadBook();recalc()}}catch{}},isCrypto()?7000:12000)}catch(e){$("dot").className="dot bad";$("live").textContent="ERRORE";$("summary").textContent=e.message+(sym==="SPCX"?" — il resto dei mercati continua a funzionare normalmente.":"")}}
+$("sym").onchange=start;$("tf").onchange=start;$("refresh").onclick=start;setInterval(evaluate,120000);start();setTimeout(evaluate,4000);
+</script>
+</body>
+</html>
