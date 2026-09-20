@@ -13,7 +13,7 @@
 .live{display:flex;align-items:center;gap:7px;font-size:12px}.dot{width:9px;height:9px;border-radius:50%;background:#777}.dot.on{background:var(--g)}.dot.bad{background:var(--r)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:14px;margin-top:10px}.hero{background:linear-gradient(#151d28,#111721)}
 .price{font-size:44px;font-weight:900}.state{font-size:22px;font-weight:900;margin:6px 0}.summary{font-size:15px;line-height:1.5}.up{color:var(--g)}.down{color:var(--r)}.range{color:var(--y)}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sig{background:var(--c2);padding:11px;border-radius:12px}.sig b{display:block;font-size:21px;margin:5px 0}.bar{height:8px;display:flex;border-radius:99px;overflow:hidden;background:#0c1118;margin-top:8px}.bu{background:var(--g)}.bf{background:var(--y)}.bd{background:var(--r)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sig{background:var(--c2);padding:11px;border-radius:12px}.sig b{display:block;font-size:21px;margin:5px 0}.acc{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;line-height:1.45}.acc .good{color:var(--g);font-weight:800}.acc .bad{color:var(--r);font-weight:800}.bar{height:8px;display:flex;border-radius:99px;overflow:hidden;background:#0c1118;margin-top:8px}.bu{background:var(--g)}.bf{background:var(--y)}.bd{background:var(--r)}
 .row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}
 .press{height:17px;border-radius:99px;overflow:hidden;display:flex;background:#0d1219;margin:10px 0}.buy{background:var(--g)}.sell{background:var(--r)}
 canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12px;touch-action:none}.hint{font-size:11px;color:var(--mut);margin-top:7px}
@@ -58,9 +58,9 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 <div class="card">
 <div class="sub">COSA POTREBBE SUCCEDERE</div>
 <div class="grid3">
-<div class="sig"><span class="sub">1 ORA</span><b id="s1" class="range">--</b><span id="p1" class="sub">--</span><div class="bar"><i id="u1" class="bu"></i><i id="f1" class="bf"></i><i id="d1" class="bd"></i></div></div>
-<div class="sig"><span class="sub">4 ORE</span><b id="s4" class="range">--</b><span id="p4" class="sub">--</span><div class="bar"><i id="u4" class="bu"></i><i id="f4" class="bf"></i><i id="d4" class="bd"></i></div></div>
-<div class="sig"><span class="sub">24 ORE</span><b id="s24" class="range">--</b><span id="p24" class="sub">--</span><div class="bar"><i id="u24" class="bu"></i><i id="f24" class="bf"></i><i id="d24" class="bd"></i></div></div>
+<div class="sig"><span class="sub">1 ORA</span><b id="s1" class="range">--</b><span id="p1" class="sub">--</span><div class="bar"><i id="u1" class="bu"></i><i id="f1" class="bf"></i><i id="d1" class="bd"></i></div><div id="acc1" class="acc sub">Storico: nessun risultato ancora</div></div>
+<div class="sig"><span class="sub">4 ORE</span><b id="s4" class="range">--</b><span id="p4" class="sub">--</span><div class="bar"><i id="u4" class="bu"></i><i id="f4" class="bf"></i><i id="d4" class="bd"></i></div><div id="acc4" class="acc sub">Storico: nessun risultato ancora</div></div>
+<div class="sig"><span class="sub">24 ORE</span><b id="s24" class="range">--</b><span id="p24" class="sub">--</span><div class="bar"><i id="u24" class="bu"></i><i id="f24" class="bf"></i><i id="d24" class="bd"></i></div><div id="acc24" class="acc sub">Storico: nessun risultato ancora</div></div>
 </div>
 </div>
 
@@ -83,7 +83,7 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 </div>
 
 <div class="card">
-<div class="top"><div><div class="sub">STORICO PREVISIONI</div><b>Controllo automatico 1h / 4h / 24h</b></div><button id="clearPred">AZZERA STORICO</button></div>
+<div class="top"><div><div class="sub">STORICO PREVISIONI</div><b>Qui vedi se ogni previsione era giusta ✓ oppure sbagliata ✗</b></div><button id="clearPred">AZZERA STORICO</button></div>
 <div class="tablewrap"><table class="tbl"><thead><tr><th>Ora</th><th>Prezzo</th><th>1h</th><th>Esito</th><th>4h</th><th>Esito</th><th>24h</th><th>Esito</th></tr></thead><tbody id="tbody"></tbody></table></div>
 </div>
 
@@ -136,7 +136,24 @@ function record(price,a,b,c){let now=Date.now(),bucket=Math.floor(now/PINT),P=pr
 async function histPrice(s,t){let a=asset(s);try{if(a.p==="binance"){let d=await bin("/api/v3/klines?symbol="+s+"&interval=1m&startTime="+Math.floor(t/60000)*60000+"&limit=2");return d?.length?+d[0][4]:null}let bs=await resolveBq(a),from=new Date(t-10*60000).toISOString(),to=new Date(t+10*60000).toISOString(),d=await jfetch("https://biquote.io/api/"+encodeURIComponent(bs)+"/ohlc?interval=1m&limit=100&from="+encodeURIComponent(from)+"&to="+encodeURIComponent(to),9000),r=bqRows(d);if(!r.length)return null;let best=r[0],dist=Math.abs(+best[0]-t);for(const x of r){let dd=Math.abs(+x[0]-t);if(dd<dist){best=x;dist=dd}}return +best[4]}catch{return null}}
 async function evaluate(){let P=preds(),now=Date.now(),changed=false,n=0;for(const r of P){for(const z of [["1h",3600000,"r1","o1","m1","s1"],["4h",14400000,"r4","o4","m4","s4"],["24h",86400000,"r24","o24","m24","s24"]]){let[h,d,rf,of,mf,sf]=z;if(r[rf]==null&&now>=r.ts+d&&n<20){let p=await histPrice(r.sym,r.ts+d);if(p!=null){let m=(p/r.price-1)*100,a=actual(m,h);r[rf]=a;r[of]=a===r[sf];r[mf]=m;changed=true;n++}}}}if(changed)saveP(P);renderP()}
 function cell(r,o,m){return r==null?'<span class="wait">ATTESA</span>':'<span class="'+(o?"ok":"no")+'">'+text(r)+" "+(o?"✓":"✗")+'</span> <span class="sub">('+(m>=0?"+":"")+Number(m).toFixed(2)+'%)</span>'}
-function renderP(){let P=preds().filter(x=>x.sym===sym);$("tbody").innerHTML=[...P].reverse().slice(0,50).map(r=>'<tr><td>'+new Date(r.ts).toLocaleString()+'</td><td>'+px(r.price,r.sym)+'</td><td>'+text(r.s1)+'</td><td>'+cell(r.r1,r.o1,r.m1)+'</td><td>'+text(r.s4)+'</td><td>'+cell(r.r4,r.o4,r.m4)+'</td><td>'+text(r.s24)+'</td><td>'+cell(r.r24,r.o24,r.m24)+'</td></tr>').join("")||'<tr><td colspan="8">Nessuna previsione ancora.</td></tr>'}
+function accuracyLine(P,field,id){
+  const done=P.filter(x=>x[field]===true||x[field]===false);
+  const good=done.filter(x=>x[field]===true).length;
+  const bad=done.length-good;
+  if(!done.length){
+    $(id).innerHTML='Storico: <span class="wait">nessun risultato ancora</span>';
+    return;
+  }
+  const gp=100*good/done.length,bp=100*bad/done.length;
+  $(id).innerHTML='Storico: <span class="good">'+gp.toFixed(1)+'% giuste</span> • <span class="bad">'+bp.toFixed(1)+'% sbagliate</span> • '+done.length+' controllate';
+}
+function renderP(){
+  let P=preds().filter(x=>x.sym===sym);
+  accuracyLine(P,"o1","acc1");
+  accuracyLine(P,"o4","acc4");
+  accuracyLine(P,"o24","acc24");
+  $("tbody").innerHTML=[...P].reverse().slice(0,50).map(r=>'<tr><td>'+new Date(r.ts).toLocaleString()+'</td><td>'+px(r.price,r.sym)+'</td><td>'+text(r.s1)+'</td><td>'+cell(r.r1,r.o1,r.m1)+'</td><td>'+text(r.s4)+'</td><td>'+cell(r.r4,r.o4,r.m4)+'</td><td>'+text(r.s24)+'</td><td>'+cell(r.r24,r.o24,r.m24)+'</td></tr>').join("")||'<tr><td colspan="8">Nessuna previsione ancora.</td></tr>';
+}
 $("clearPred").onclick=()=>{if(confirm("Azzero lo storico previsioni?")){localStorage.removeItem(PKEY);renderP()}};
 async function refreshAll(){let needed=[...new Set([...req,tf])],all=await Promise.all(needed.map(x=>loadK(x)));K={};needed.forEach((x,i)=>K[x]=all[i]);await loadBook();let q=await quote();updateQuote(q);recalc();draw();renderP();$("dot").className="dot on";$("live").textContent=q.state==="closed"?"CHIUSO":"LIVE"}
 function stop(){if(ws){try{ws.onclose=null;ws.close()}catch{}ws=null}if(poll){clearInterval(poll);poll=null}}
