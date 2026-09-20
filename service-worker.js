@@ -1,5 +1,45 @@
-const CACHE="coinstraight-v2";
+const CACHE="coinstraight-v4";
 const SHELL=["./","./index.html","./manifest.webmanifest","./icon.svg"];
-self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));self.skipWaiting()});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))));self.clients.claim()});
-self.addEventListener("fetch",e=>{if(e.request.method!=="GET")return;let u=new URL(e.request.url);if(u.hostname.includes("binance.com")||u.hostname.includes("binance.vision")){e.respondWith(fetch(e.request));return}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(x=>{let y=x.clone();caches.open(CACHE).then(c=>c.put(e.request,y));return x})))});
+
+self.addEventListener("install",event=>{
+  event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));
+  self.skipWaiting();
+});
+
+self.addEventListener("activate",event=>{
+  event.waitUntil(
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch",event=>{
+  if(event.request.method!=="GET")return;
+  const url=new URL(event.request.url);
+
+  if(url.hostname.includes("binance.com")||url.hostname.includes("binance.vision")){
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  if(event.request.mode==="navigate" || url.pathname.endsWith("/index.html")){
+    event.respondWith(
+      fetch(event.request,{cache:"no-store"})
+        .then(resp=>{
+          const copy=resp.clone();
+          caches.open(CACHE).then(c=>c.put("./index.html",copy));
+          return resp;
+        })
+        .catch(()=>caches.match("./index.html"))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then(cached=>cached||fetch(event.request).then(resp=>{
+      const copy=resp.clone();
+      caches.open(CACHE).then(c=>c.put(event.request,copy));
+      return resp;
+    }))
+  );
+});
