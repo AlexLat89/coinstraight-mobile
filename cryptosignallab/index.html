@@ -88,7 +88,7 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 <div class="top"><div><div class="sub">CANDELE</div><div id="ohlc" class="sub">--</div></div><div><button id="minus">−</button><button id="plus">+</button><button id="reset">RESET</button></div></div>
 <div id="candleDetails" class="candleDetails">Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.</div>
 <canvas id="chart" width="1000" height="500"></canvas>
-<div class="hint">Clic/tap = dettagli candela • In basso: data e ora • Rotella = zoom • trascina = scorri • doppio click = reset</div>
+<div class="hint">Passa il mouse = mirino con prezzo e data/ora • Clic/tap = fissa la candela • Rotella = zoom • trascina = scorri • doppio click = reset</div>
 </div>
 
 <div class="card">
@@ -113,7 +113,7 @@ SOLUSDT:{p:"binance",name:"SOL",prefix:"$"},BTCUSDT:{p:"binance",name:"BTC",pref
 EURUSD:{p:"bq",name:"EUR/USD",bq:"EURUSD",prefix:""},GBPUSD:{p:"bq",name:"GBP/USD",bq:"GBPUSD",prefix:""},AUDUSD:{p:"bq",name:"AUD/USD",bq:"AUDUSD",prefix:""},USDJPY:{p:"bq",name:"USD/JPY",bq:"USDJPY",prefix:""},USDCAD:{p:"bq",name:"USD/CAD",bq:"USDCAD",prefix:""},USDCHF:{p:"bq",name:"USD/CHF",bq:"USDCHF",prefix:""},NZDUSD:{p:"bq",name:"NZD/USD",bq:"NZDUSD",prefix:""},EURGBP:{p:"bq",name:"EUR/GBP",bq:"EURGBP",prefix:""},
 XAUUSD:{p:"bq",name:"ORO",bq:"XAUUSD",prefix:"$"},USOIL:{p:"bq",name:"WTI",bq:"USOIL",prefix:"$"},UKOIL:{p:"bq",name:"BRENT",bq:"UKOIL",prefix:"$"},SPCX:{p:"bq",name:"SPACEX",bq:"SPCX",prefix:"$"}
 };
-let sym="SOLUSDT",tf="5m",K={},ws=null,quotePoll=null,candlePoll=null,bookPoll=null,bqConn=null,bqSubscribed=null,lastPrice=null,book={b:50,s:50,ok:false},view=80,off=0,drag=false,sx=0,so=0,spcxResolved=null,selectedCandleTs=null,chartMeta=null,pointerMoved=false;
+let sym="SOLUSDT",tf="5m",K={},ws=null,quotePoll=null,candlePoll=null,bookPoll=null,bqConn=null,bqSubscribed=null,lastPrice=null,book={b:50,s:50,ok:false},view=80,off=0,drag=false,sx=0,so=0,spcxResolved=null,selectedCandleTs=null,chartMeta=null,pointerMoved=false,hoverPoint=null;
 const req=["5m","15m","1h","4h"],PKEY="csl_web_predictions_v1",PINT=15*60*1000;
 function asset(s=sym){return ASSETS[s]||ASSETS.SOLUSDT}
 function isCrypto(s=sym){return asset(s).p==="binance"}
@@ -249,7 +249,7 @@ function draw(){
       pad=(hi-lo)*.07||Math.abs(hi)*.001||1,top=20,bot=375,vtop=400,vbot=447,left=8,right=75,pw=W-left-right,ph=bot-top,
       y=p=>top+(hi+pad-p)/(hi-lo+2*pad)*ph,x=i=>left+(i+.5)*pw/c.length,
       cw=Math.max(3,Math.min(26,pw/c.length*.62)),mv=Math.max(...c.map(x=>+x[5]))||1;
-  chartMeta={c,left,right,pw,W,H,x};
+  chartMeta={c,left,right,pw,W,H,x,top,bot,vbot,ph,hi,lo,pad,y,cw};
   ctx.fillStyle="#0f151e";ctx.fillRect(0,0,W,H);
   ctx.strokeStyle="#263143";ctx.fillStyle="#8f9bad";ctx.font="11px system-ui";
 
@@ -284,33 +284,99 @@ function draw(){
     }
   }
 
+  // Mirino interattivo: prezzo a destra + data/ora in basso.
+  if(hoverPoint&&hoverPoint.idx>=0&&hoverPoint.idx<c.length){
+    const hp=hoverPoint,xx=x(hp.idx),yy=clamp(hp.cy,top,bot),k=c[hp.idx];
+    const price=hi+pad-((yy-top)/ph)*(hi-lo+2*pad);
+
+    ctx.save();
+    ctx.setLineDash([5,4]);
+    ctx.strokeStyle="#7d8da3";
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(W-right,yy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(xx,top);ctx.lineTo(xx,vbot);ctx.stroke();
+    ctx.setLineDash([]);
+
+    const priceText=px(price),priceX=W-right+2,priceY=clamp(yy-11,2,H-24),priceW=Math.max(68,right-4);
+    ctx.fillStyle="#263548";
+    ctx.fillRect(priceX,priceY,priceW,22);
+    ctx.strokeStyle="#58d3ea";
+    ctx.strokeRect(priceX+.5,priceY+.5,priceW-1,21);
+    ctx.fillStyle="#eef4f8";
+    ctx.font="bold 11px system-ui";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(priceText,priceX+priceW/2,priceY+11);
+
+    const timeText=axisLabel(+k[0]);
+    ctx.font="bold 11px system-ui";
+    const tw=Math.min(160,Math.max(92,ctx.measureText(timeText).width+16));
+    const tx=clamp(xx-tw/2,left,W-right-tw);
+    ctx.fillStyle="#263548";
+    ctx.fillRect(tx,452,tw,24);
+    ctx.strokeStyle="#58d3ea";
+    ctx.strokeRect(tx+.5,452.5,tw-1,23);
+    ctx.fillStyle="#eef4f8";
+    ctx.fillText(timeText,tx+tw/2,464);
+    ctx.restore();
+
+    // Durante il passaggio del mouse, mostra anche i dati della candela sotto il titolo.
+    $("ohlc").textContent=fullDate(+k[0])+" • O "+fmt(k[1])+" H "+fmt(k[2])+" L "+fmt(k[3])+" C "+fmt(k[4]);
+  }
+
   function line(a,col){ctx.strokeStyle=col;ctx.beginPath();let go=false;a.forEach((v,i)=>{if(!Number.isFinite(v))return;go?ctx.lineTo(x(i),y(v)):(ctx.moveTo(x(i),y(v)),go=true)});ctx.stroke()}
   line(e9,"#58d3ea");line(e21,"#f5d76f");
-  let k=selectedCandleTs!=null?c.find(x=>+x[0]===+selectedCandleTs):null;if(!k)k=c.at(-1);
-  $("ohlc").textContent=fullDate(+k[0])+" • O "+fmt(k[1])+" H "+fmt(k[2])+" L "+fmt(k[3])+" C "+fmt(k[4]);
+  if(!hoverPoint){let k=selectedCandleTs!=null?c.find(x=>+x[0]===+selectedCandleTs):null;if(!k)k=c.at(-1);$("ohlc").textContent=fullDate(+k[0])+" • O "+fmt(k[1])+" H "+fmt(k[2])+" L "+fmt(k[3])+" C "+fmt(k[4]);}
 }
 function zoom(n){view=clamp(Math.round(n),2,180);draw()}
 $("plus").onclick=()=>zoom(view*.78);
 $("minus").onclick=()=>zoom(view*1.28);
-$("reset").onclick=()=>{view=Math.min(80,K[tf]?.length||80);off=0;selectedCandleTs=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';draw()};
+$("reset").onclick=()=>{view=Math.min(80,K[tf]?.length||80);off=0;selectedCandleTs=null;hoverPoint=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';draw()};
 let cv=$("chart");
 cv.addEventListener("wheel",e=>{e.preventDefault();zoom(view*(e.deltaY<0?.82:1.22))},{passive:false});
 function selectCandleAt(e){
   if(!chartMeta?.c?.length)return;
   const r=cv.getBoundingClientRect(),cx=(e.clientX-r.left)*(cv.width/r.width),m=chartMeta;
   const raw=(cx-m.left)/m.pw*m.c.length-.5,idx=clamp(Math.round(raw),0,m.c.length-1),k=m.c[idx];
-  selectedCandleTs=+k[0];showCandleDetails(k);draw();
+  selectedCandleTs=+k[0];hoverPoint=null;showCandleDetails(k);draw();
 }
 cv.addEventListener("pointerdown",e=>{drag=true;pointerMoved=false;sx=e.clientX;so=off;try{cv.setPointerCapture(e.pointerId)}catch{}});
 cv.addEventListener("pointermove",e=>{
-  if(!drag)return;
-  if(Math.abs(e.clientX-sx)>5)pointerMoved=true;
-  let r=cv.getBoundingClientRect(),per=(r.width*.92)/Math.max(2,view);
-  off=clamp(so+Math.round((e.clientX-sx)/Math.max(2,per)),0,Math.max(0,(K[tf]?.length||0)-view));
-  if(pointerMoved)draw();
+  const r=cv.getBoundingClientRect();
+  const cx=(e.clientX-r.left)*(cv.width/r.width);
+  const cy=(e.clientY-r.top)*(cv.height/r.height);
+
+  if(drag){
+    if(Math.abs(e.clientX-sx)>5)pointerMoved=true;
+    const per=(r.width*.92)/Math.max(2,view);
+    off=clamp(so+Math.round((e.clientX-sx)/Math.max(2,per)),0,Math.max(0,(K[tf]?.length||0)-view));
+    hoverPoint=null;
+    if(pointerMoved)draw();
+    return;
+  }
+
+  if(!chartMeta?.c?.length)return;
+  const m=chartMeta;
+  if(cx<m.left||cx>m.W-m.right||cy<m.top||cy>m.vbot){
+    if(hoverPoint){hoverPoint=null;draw()}
+    return;
+  }
+  const raw=(cx-m.left)/m.pw*m.c.length-.5;
+  const idx=clamp(Math.round(raw),0,m.c.length-1);
+  hoverPoint={idx:idx,cx:cx,cy:cy};
+  showCandleDetails(m.c[idx]);
+  draw();
 });
 cv.addEventListener("pointerup",e=>{if(!pointerMoved)selectCandleAt(e);drag=false;try{cv.releasePointerCapture(e.pointerId)}catch{}});
-cv.addEventListener("pointercancel",()=>{drag=false});
+cv.addEventListener("pointercancel",()=>{drag=false;hoverPoint=null;draw()});
+cv.addEventListener("pointerleave",()=>{
+  if(drag)return;
+  hoverPoint=null;
+  const data=K[tf]||[];
+  const sel=selectedCandleTs!=null?data.find(k=>+k[0]===+selectedCandleTs):null;
+  if(sel)showCandleDetails(sel);
+  else $("candleDetails").innerHTML='Passa il mouse sulle candele oppure clicca/tocca per fissarne una.';
+  draw();
+});
 cv.ondblclick=()=>{$("reset").click()};
 function preds(){try{return JSON.parse(localStorage.getItem(PKEY)||"[]")}catch{return[]}}function saveP(a){localStorage.setItem(PKEY,JSON.stringify(a.slice(-800)))}
 function actual(m,h){let t=h==="1h"?.35:h==="4h"?.75:1.4;return m>t?"UP":m<-t?"DOWN":"FLAT"}
@@ -442,7 +508,7 @@ async function startBQWS(){
 }
 async function start(){
   await stop();
-  sym=$("sym").value;tf=$("tf").value;view=80;off=0;K={};selectedCandleTs=null;chartMeta=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';
+  sym=$("sym").value;tf=$("tf").value;view=80;off=0;K={};selectedCandleTs=null;hoverPoint=null;chartMeta=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';
   $("dot").className="dot";$("live").textContent="CARICO DATI";$("summary").textContent="Carico "+asset().name+"...";
   try{
     await refreshAll();
