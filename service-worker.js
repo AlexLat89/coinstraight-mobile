@@ -1,4 +1,4 @@
-const CACHE="coinstraight-v6";
+const CACHE="coinstraight-v7";
 const SHELL=["./","./index.html","./manifest.webmanifest","./icon.svg"];
 
 self.addEventListener("install",event=>{
