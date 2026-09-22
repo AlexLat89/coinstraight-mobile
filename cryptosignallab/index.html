@@ -20,6 +20,8 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 .tablewrap{overflow:auto}.tbl{width:100%;border-collapse:collapse;font-size:12px}.tbl th,.tbl td{padding:8px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}.tbl th{color:var(--mut)}
 .ok{color:var(--g);font-weight:800}.no{color:var(--r);font-weight:800}.wait{color:var(--y);font-weight:800}
 @media(max-width:720px){.grid3{grid-template-columns:1fr}.price{font-size:38px}canvas{height:390px}.controls select{flex:1;min-width:145px}}
+
+.lessonGrid{display:grid;grid-template-columns:minmax(240px,.7fr) minmax(0,1.3fr);gap:18px;margin-top:12px}.lessonPicture svg{width:100%;max-width:340px;display:block}.lessonPicture text{fill:var(--txt);font:12px system-ui}.lessonGrid h3{font-size:15px;color:var(--c);margin:0 0 6px}.lessonGrid p{font-size:14px;line-height:1.65;margin:0 0 16px}.lessonTools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.lessonTools select{max-width:100%;min-width:0}.lessonTools label{max-width:100%;font-size:13px}#lessonTitle{font-size:21px;margin:10px 0}#lessonStatus{color:var(--y);font-size:12px}#lessonMeta{font-size:12px;color:var(--mut);line-height:1.6}button:disabled{opacity:.5;cursor:default}@media(max-width:650px){.lessonGrid{grid-template-columns:1fr}.lessonPicture svg{max-width:310px;margin:auto}}
 </style>
 </head>
 <body>
@@ -89,6 +91,15 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 <div id="candleDetails" class="candleDetails">Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.</div>
 <canvas id="chart" width="1000" height="500"></canvas>
 <div class="hint">Passa il mouse = mirino con prezzo e data/ora • Clic/tap = fissa la candela • Rotella = zoom • trascina = scorri • doppio click = reset</div>
+</div>
+
+<div class="card" id="candleLesson">
+<div class="top"><div class="sub">LA CANDELA SPIEGATA · PAROLE SEMPLICI</div><span id="lessonStatus" role="status">In attesa</span></div>
+<div class="lessonTools"><button id="lessonAuto" disabled>SEGUI L’ULTIMA CHIUSA</button><label>Esempi per imparare <select id="lessonExamples">
+<option value="">Candele del mercato</option><option value="green">Verde grande</option><option value="red">Rossa grande</option><option value="small">Corpo piccolo</option><option value="doji">Croce / inizio e fine uguali</option><option value="lower">Linea lunga sotto</option><option value="upper">Linea lunga sopra</option><option value="both">Linee lunghe sopra e sotto</option><option value="hollow">Hollow: verde vuota</option><option value="hollowred">Hollow: rossa vuota</option><option value="filledgreen">Hollow: verde piena</option><option value="filledred">Hollow: rossa piena</option>
+</select></label></div>
+<h2 id="lessonTitle">Attendo le candele…</h2><div id="lessonMeta"></div><div id="lessonBody" class="lessonGrid"></div>
+<div class="hint">Clicca/tocca una candela nel grafico per leggerla. “Segui l’ultima chiusa” riprende gli aggiornamenti automatici. Funziona mentre la pagina è aperta e riceve dati; per gli intervalli ricostruiti e il recupero della connessione può servire circa 30 secondi o più. Spiegazioni automatiche basate sui prezzi, non consigli di acquisto.</div>
 </div>
 
 <div class="card">
@@ -204,8 +215,8 @@ async function loadRaw(intv,limit,s=sym){
   return rows;
 }
 async function loadK(intv,limit=220,s=sym){
-  const p=tfPlan(intv,s),raw=await loadRaw(p.base,sourceLimit(p,limit),s);
-  return aggregateRows(raw,p).slice(-limit);
+  const requestedAt=Date.now(),p=tfPlan(intv,s),raw=await loadRaw(p.base,sourceLimit(p,limit),s);
+  const rows=aggregateRows(raw,p).slice(-limit);rows.fetchedAt=requestedAt;return rows;
 }
 async function quote(){let a=asset();if(a.p==="binance"){let t=await bin("/api/v3/ticker/24hr?symbol="+sym);return{p:+t.lastPrice,ch:+t.priceChangePercent,hi:+t.highPrice,lo:+t.lowPrice,state:"open",age:0}}let bs=await resolveBq(a),d=await jfetch("https://biquote.io/api/"+encodeURIComponent(bs)+"?_="+Date.now(),7000),p=+(d.mid??d.last??((+d.bid + +d.ask)/2)),ch=+(d.dayDiffPercent??d.changePercent),hi=+(d.dayHigh??d.high??p),lo=+(d.dayLow??d.low??p);return{p,ch,hi,lo,state:d.marketState||"open",age:+d.quoteAgeSeconds||0}}
 async function loadBook(){if(!isCrypto()){book={b:50,s:50,ok:false};return}try{let d=await bin("/api/v3/depth?symbol="+sym+"&limit=100"),b=0,a=0;d.bids.forEach(x=>b+=+x[0]*+x[1]);d.asks.forEach(x=>a+=+x[0]*+x[1]);book.b=100*b/(a+b);book.s=100-book.b;book.ok=true}catch{book={b:50,s:50,ok:false}}}
@@ -241,6 +252,7 @@ function showCandleDetails(k){
     (v>0?' • Volume '+v.toLocaleString():'');
 }
 function draw(){
+  renderLesson();
   let data=K[tf];if(!data?.length)return;
   let cv=$("chart"),ctx=cv.getContext("2d"),W=cv.width,H=cv.height;
   view=clamp(view,2,Math.min(180,data.length));off=clamp(off,0,Math.max(0,data.length-view));
@@ -330,14 +342,14 @@ function draw(){
 function zoom(n){view=clamp(Math.round(n),2,180);draw()}
 $("plus").onclick=()=>zoom(view*.78);
 $("minus").onclick=()=>zoom(view*1.28);
-$("reset").onclick=()=>{view=Math.min(80,K[tf]?.length||80);off=0;selectedCandleTs=null;hoverPoint=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';draw()};
+$("reset").onclick=()=>{lessonPinned=null;lessonExample="";$("lessonExamples").value="";view=Math.min(80,K[tf]?.length||80);off=0;selectedCandleTs=null;hoverPoint=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';draw()};
 let cv=$("chart");
 cv.addEventListener("wheel",e=>{e.preventDefault();zoom(view*(e.deltaY<0?.82:1.22))},{passive:false});
 function selectCandleAt(e){
   if(!chartMeta?.c?.length)return;
   const r=cv.getBoundingClientRect(),cx=(e.clientX-r.left)*(cv.width/r.width),m=chartMeta;
   const raw=(cx-m.left)/m.pw*m.c.length-.5,idx=clamp(Math.round(raw),0,m.c.length-1),k=m.c[idx];
-  selectedCandleTs=+k[0];hoverPoint=null;showCandleDetails(k);draw();
+  selectedCandleTs=+k[0];hoverPoint=null;showCandleDetails(k);pinLesson(+k[0]);draw();
 }
 cv.addEventListener("pointerdown",e=>{drag=true;pointerMoved=false;sx=e.clientX;so=off;try{cv.setPointerCapture(e.pointerId)}catch{}});
 cv.addEventListener("pointermove",e=>{
@@ -410,17 +422,20 @@ function renderP(){
   $("tbody").innerHTML=[...P].reverse().slice(0,50).map(r=>'<tr><td>'+new Date(r.ts).toLocaleString()+'</td><td>'+px(r.price,r.sym)+'</td><td>'+text(r.s1)+'</td><td>'+cell(r.r1,r.o1,r.m1)+'</td><td>'+text(r.s4)+'</td><td>'+cell(r.r4,r.o4,r.m4)+'</td><td>'+text(r.s24)+'</td><td>'+cell(r.r24,r.o24,r.m24)+'</td></tr>').join("")||'<tr><td colspan="8">Nessuna previsione ancora.</td></tr>';
 }
 $("clearPred").onclick=()=>{if(confirm("Azzero lo storico previsioni?")){localStorage.removeItem(PKEY);renderP()}};
-async function refreshAll(){
+async function refreshAll(epoch=marketGeneration){
+  const requestSym=sym;
   const needed=[...new Set([...req,tf])];
   $("live").textContent="CARICO DATI";
-  const all=await Promise.all(needed.map(x=>loadK(x)));
+  const all=await Promise.all(needed.map(x=>loadK(x,220,requestSym)));
+  if(epoch!==marketGeneration)return false;
   K={};needed.forEach((x,i)=>K[x]=all[i]);
   try{await loadBook()}catch{}
   let q=null;
-  try{q=await quote();updateQuote(q)}catch{
+  try{q=await quote();if(epoch!==marketGeneration)return false;updateQuote(q)}catch{
     const last=K[tf]?.at(-1)||K["5m"]?.at(-1);
     if(last)updateQuote({p:+last[4],ch:NaN,hi:+last[2],lo:+last[3],state:"open",age:0});
   }
+  if(epoch!==marketGeneration)return false;
   recalc();draw();renderP();
   $("dot").className="dot on";
   $("live").textContent=q&&String(q.state).toLowerCase()==="closed"?"CHIUSO":"LIVE";
@@ -438,7 +453,23 @@ async function stop(){
       bqConn=null;bqSubscribed=null;
     }
   }
-function startCryptoWS(){let s=sym.toLowerCase(),p=tfPlan(tf),chartStreams=p.synthetic?[]:[tf],streams=[s+"@ticker",...new Set([...req,...chartStreams])].map(x=>s+"@kline_"+x);try{ws=new WebSocket("wss://data-stream.binance.vision/stream?streams="+streams.join("/"))}catch{return}ws.onopen=()=>{$("dot").className="dot on";$("live").textContent="LIVE"};ws.onmessage=e=>{let d=JSON.parse(e.data).data;if(d.e==="24hrTicker")updateQuote({p:+d.c,ch:+d.P,hi:+d.h,lo:+d.l,state:"open"});else if(d.e==="kline"){let k=d.k,row=[k.t,String(k.o),String(k.h),String(k.l),String(k.c),String(k.v),k.T];if(K[k.i]){let a=K[k.i];if(+a.at(-1)[0]===k.t)a[a.length-1]=row;else{a.push(row);if(a.length>240)a.shift()}}if(k.i===tf)draw();recalc()}};ws.onerror=()=>{$("dot").className="dot bad";$("live").textContent="REST"}}
+function startCryptoWS(){
+  const s=sym.toLowerCase(),epoch=marketGeneration,p=tfPlan(tf),chartStreams=p.synthetic?[]:[tf];
+  const streams=[s+"@ticker",...[...new Set([...req,...chartStreams])].map(x=>s+"@kline_"+x)];
+  try{ws=new WebSocket("wss://data-stream.binance.vision/stream?streams="+streams.join("/"))}catch{return}
+  ws.onopen=()=>{if(epoch!==marketGeneration)return;$("dot").className="dot on";$("live").textContent="LIVE"};
+  ws.onmessage=e=>{
+    if(epoch!==marketGeneration)return;
+    let d;try{d=JSON.parse(e.data).data}catch{return}if(!d)return;
+    if(d.e==="24hrTicker")updateQuote({p:+d.c,ch:+d.P,hi:+d.h,lo:+d.l,state:"open"});
+    else if(d.e==="kline"){
+      let k=d.k,row=[k.t,String(k.o),String(k.h),String(k.l),String(k.c),String(k.v),k.T];row.closedConfirmed=k.x===true;row.liveUpdatedAt=Date.now();
+      if(K[k.i]){let a=K[k.i],idx=a.findIndex(r=>+r[0]===k.t);if(idx>=0)a[idx]=row;else if(!a.length||k.t>+a.at(-1)[0]){a.push(row);if(a.length>240)a.shift()}}
+      if(k.i===tf)draw();recalc();
+    }
+  };
+  ws.onerror=()=>{if(epoch!==marketGeneration)return;$("dot").className="dot bad";$("live").textContent="REST"};
+}
 async function startBQWS(){
   const a=asset();
   const bs=await resolveBq(a);
@@ -507,16 +538,18 @@ async function startBQWS(){
   if($("live").textContent!=="LIVE TICK")$("live").textContent="STREAM PRONTO";
 }
 async function start(){
-  await stop();
+  const epoch=++marketGeneration;
+  await stop();if(epoch!==marketGeneration)return;
+  resetLesson();
   sym=$("sym").value;tf=$("tf").value;view=80;off=0;K={};selectedCandleTs=null;hoverPoint=null;chartMeta=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';
   $("dot").className="dot";$("live").textContent="CARICO DATI";$("summary").textContent="Carico "+asset().name+"...";
   try{
-    await refreshAll();
+    await refreshAll(epoch);if(epoch!==marketGeneration)return;
 
     // Backup prezzo: 1 secondo. Serve anche se WebSocket/SignalR viene bloccato dal browser o dalla rete.
     quotePoll=setInterval(async()=>{
       try{
-        const q=await quote();
+        const q=await quote();if(epoch!==marketGeneration)return;
         updateQuote(q);
         if(String(q.state).toLowerCase()==="closed"){
           $("dot").className="dot bad";$("live").textContent="MERCATO CHIUSO";
@@ -529,23 +562,116 @@ async function start(){
     if(isCrypto()){
       startCryptoWS();
       bookPoll=setInterval(async()=>{try{await loadBook();recalc()}catch{}},7000);
-      if(tfPlan(tf).synthetic)candlePoll=setInterval(async()=>{try{K[tf]=await loadK(tf);draw()}catch{}},60000);
+
     }else{
       try{await startBQWS()}catch(e){
         $("dot").className="dot on";$("live").textContent="LIVE 1s";
       }
-      candlePoll=setInterval(async()=>{
-        try{
-          let needed=[...new Set([...req,tf])],all=await Promise.all(needed.map(x=>loadK(x)));
-          needed.forEach((x,i)=>K[x]=all[i]);recalc();draw();
-        }catch{}
-      },60000);
+
     }
+    if(epoch!==marketGeneration)return;
+    let polling=false;
+    candlePoll=setInterval(async()=>{
+      if(polling||epoch!==marketGeneration)return;polling=true;
+      const requestStarted=Date.now(),requestSym=sym,requestTf=tf,needed=[...new Set([...req,requestTf])];
+      try{
+        const all=await Promise.all(needed.map(x=>loadK(x,220,requestSym)));
+        if(epoch!==marketGeneration)return;
+        needed.forEach((x,i)=>{
+          // Keep any newer live candles that arrived while REST was in flight.
+          const incoming=all[i],current=K[x]||[],merged=new Map(incoming.map(r=>[+r[0],r]));
+          for(const r of current)if(r.liveUpdatedAt>requestStarted)merged.set(+r[0],r);
+          const rows=[...merged.values()].sort((a,b)=>+a[0]-+b[0]).slice(-240);rows.fetchedAt=incoming.fetchedAt;K[x]=rows;
+        });recalc();draw();
+      }catch{}finally{polling=false}
+    },30000);
   }catch(e){
+    if(epoch!==marketGeneration)return;
     $("dot").className="dot bad";$("live").textContent="RIPROVA";
     $("summary").textContent=(e.message||"Dati non disponibili")+" — premi AGGIORNA per riprovare."+(sym==="SPCX"?" Il resto dei mercati continua a funzionare normalmente.":"");
   }
 }
+// Spiegazioni educative calcolate dai prezzi, senza API AI o segnali di acquisto.
+let lessonPinned=null,lessonExample='',lessonRenderKey='',marketGeneration=0;
+function candleEnd(ts,intv){
+  const m=/^(\d+)([mhdwMY])$/.exec(intv);if(!m)return NaN;
+  const n=+m[1],unit=m[2],d=new Date(ts);
+  if(unit==='M'||unit==='Y')return Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+n*(unit==='Y'?12:1),1);
+  return ts+n*({m:60000,h:3600000,d:86400000,w:604800000}[unit]);
+}
+function candleIsClosed(rows,i,intv=tf,now=Date.now()){
+  const r=rows[i],end=candleEnd(+r[0],intv);
+  if(!Number.isFinite(end)||now<end)return false;
+  // Never mark a stale, unfinished last row closed only because the clock passed.
+  return r.closedConfirmed===true||(+rows[i+1]?.[0]>=end)||Number(rows.fetchedAt)>=end+1000;
+}
+function describeCandle(row,previous){
+  const [o,h,l,c]=row.slice(1,5).map(Number),span=h-l,body=Math.abs(c-o);
+  if(![o,h,l,c].every(Number.isFinite)||o<=0||l<=0||h<Math.max(o,c)||l>Math.min(o,c))return null;
+  const upper=Math.max(0,h-Math.max(o,c)),lower=Math.max(0,Math.min(o,c)-l),fraction=span?body/span:0;
+  const rising=c>o,flat=c===o,change=100*(c/o-1);
+  let name,shape,meaning,watch;
+  if(span===0){name='Prezzo fermo nei dati ricevuti';shape='Inizio, fine, massimo e minimo coincidono: il rettangolo e le lineette si sovrappongono.';meaning='Non risultano variazioni in questa candela. Questo da solo non dimostra quanti scambi ci siano stati.';watch='Controlla che i dati siano aggiornati e se il mercato è aperto.';}
+  else if(lower/span>=.55&&upper/span<=.2&&fraction<=.35){name='Recupero dopo una discesa';shape='La linea lunga sotto mostra prezzi bassi raggiunti, ma non mantenuti alla fine.';meaning='Il prezzo è risalito dal minimo. Il colore dipende comunque dal confronto tra inizio e fine.';watch='Guarda se le candele successive mantengono il recupero. Tornare sotto questo minimo smentirebbe la tenuta di quel recupero.';}
+  else if(upper/span>=.55&&lower/span<=.2&&fraction<=.35){name='Salita in parte persa';shape='La linea lunga sopra mostra il massimo raggiunto; la fine è rimasta molto più in basso.';meaning='Il prezzo non ha mantenuto la parte alta della salita, anche se la candela può essere verde.';watch='Osserva se il prezzo torna verso il massimo oppure continua a perdere terreno. Non è un ordine di vendita.';}
+  else if(fraction<=.1){name=flat?'Inizio e fine uguali':'Inizio e fine quasi uguali';shape='Il rettangolo è minuscolo rispetto alla distanza fra massimo e minimo: la forma è spesso chiamata doji.';meaning='Il risultato finale è piccolo, ma durante la candela il prezzo può essersi mosso molto. Non significa pochi scambi.';watch='Guarda le prossime candele: questa forma da sola non indica quale direzione arriverà.';}
+  else if(upper/span>=.25&&lower/span>=.25){name='Oscillazioni in entrambe le direzioni';shape='Le linee sopra e sotto sono entrambe evidenti. Il rettangolo racconta solo la differenza tra inizio e fine.';meaning='Il prezzo ha raggiunto livelli più alti e più bassi rispetto al rettangolo. Dai quattro prezzi non sappiamo quale estremo sia arrivato prima.';watch='Puoi scegliere un intervallo più breve per capire meglio il movimento. Non dedurre il percorso esatto dalla sola forma.';}
+  else if(fraction>=.7){name=rising?'Salita mantenuta fino alla fine':'Discesa mantenuta fino alla fine';shape='Il rettangolo occupa gran parte della distanza tra massimo e minimo. “Grande” qui è relativo a questa candela, non alle altre.';meaning=rising?'Il prezzo ha finito vicino alla parte alta del suo intervallo. Non significa che sia salito senza interruzioni.':'Il prezzo ha finito vicino alla parte bassa del suo intervallo. Non significa che continuerà a scendere.';watch='Confronta con le candele vicine e verifica se il movimento viene mantenuto o rapidamente recuperato.';}
+  else {name=fraction<.3?'Poco cambiamento tra inizio e fine':rising?'Candela conclusa più in alto':'Candela conclusa più in basso';shape='Il rettangolo va dal prezzo iniziale a quello finale; le lineette mostrano gli estremi raggiunti.';meaning='Questa candela descrive un movimento già osservato, senza una forma dominante nelle regole di lettura usate qui.';watch='Considera anche le candele precedenti e le notizie. Una sola candela non basta per decidere un acquisto.';}
+  const direction=flat?'è rimasto uguale':rising?'è salito':'è sceso';
+  const story='È partita da '+px(o)+', ha raggiunto un massimo di '+px(h)+' e un minimo di '+px(l)+'. L’ultimo prezzo ricevuto è '+px(c)+': '+direction+' del '+Math.abs(change).toFixed(3)+'% rispetto all’inizio.';
+  const p=previous?+previous[4]:NaN;
+  const comparison=Number.isFinite(p)?'La candela precedente terminava a '+px(p)+'. Questa finisce '+(c>p?'sopra':c<p?'sotto':'allo stesso livello')+' quel prezzo.':'Non c’è una candela precedente disponibile per il confronto.';
+  return {o,h,l,c,span,change,name,shape,meaning,watch,story,comparison};
+}
+const lessonExamples={
+ small:{r:[0,100,104,98,101],p:99},green:{r:[0,100,113,99,112],p:98},red:{r:[0,112,113,99,100],p:114},doji:{r:[0,100,108,93,100],p:101},lower:{r:[0,100,105,85,104],p:102},upper:{r:[0,100,120,99,104],p:102},both:{r:[0,100,120,80,102],p:101},hollow:{r:[0,100,114,97,110],p:98,hollow:true},hollowred:{r:[0,100,114,97,110],p:112,hollow:true},filledgreen:{r:[0,110,114,97,100],p:98,hollow:true},filledred:{r:[0,110,114,97,100],p:112,hollow:true}
+};
+function lessonSVG(a,hollow=false,prev){
+  const span=a.span||Math.max(a.c*.01,1),y=v=>242-(v-a.l)/span*190;
+  const x=56,lx=106,top=y(Math.max(a.o,a.c)),bottom=y(Math.min(a.o,a.c));
+  const color=(hollow?a.c>=prev:a.c>=a.o)?'#66dfa0':'#ff7c87';
+  const filled=!hollow||a.c<=a.o;
+  let shape='<line x1="56" x2="56" y1="'+y(a.h)+'" y2="'+top+'" stroke="'+color+'" stroke-width="3"/><line x1="56" x2="56" y1="'+bottom+'" y2="'+y(a.l)+'" stroke="'+color+'" stroke-width="3"/>';
+  shape+=a.o===a.c?'<line x1="35" x2="77" y1="'+top+'" y2="'+top+'" stroke="'+color+'" stroke-width="3"/>':'<rect x="35" y="'+top+'" width="42" height="'+(bottom-top)+'" fill="'+(filled?color:'none')+'" stroke="'+color+'" stroke-width="2"/>';
+  let labs=[{v:a.h,t:'Più alto: '+fmt(a.h)},{v:a.l,t:'Più basso: '+fmt(a.l)}];
+  if(a.o===a.c)labs.push({v:a.o,t:'Inizio/fine: '+fmt(a.o)});else labs.push({v:a.o,t:'Inizio: '+fmt(a.o)},{v:a.c,t:'Fine: '+fmt(a.c)});
+  labs.sort((a,b)=>b.v-a.v);let last=0;
+  for(const lab of labs){let yy=Math.max(y(lab.v),last+28);last=yy;shape+='<path d="M 80 '+y(lab.v)+' L 100 '+yy+'" stroke="#98a6b8" fill="none"/><text x="'+lx+'" y="'+(yy+4)+'">'+lab.t+'</text>';}
+  return '<svg viewBox="0 0 310 335" role="img" aria-label="Inizio '+fmt(a.o)+', fine '+fmt(a.c)+', massimo '+fmt(a.h)+', minimo '+fmt(a.l)+'"><text x="12" y="22">'+(lessonExample?'Esempio inventato':'Candela selezionata')+'</text>'+shape+'<text x="12" y="328">'+(hollow?'Stile Hollow':'Standard: verde sale, rosso scende')+'</text></svg>';
+}
+function resetLesson(){lessonPinned=null;lessonExample='';lessonRenderKey='';$('lessonExamples').value='';$('lessonTitle').textContent='Attendo le candele…';$('lessonBody').replaceChildren();$('lessonStatus').textContent='Caricamento';$('lessonMeta').textContent='';$('lessonAuto').disabled=true;}
+function renderLesson(){
+  const rows=K[tf]||[];let i=-1,row,previous,closed=false,example=lessonExamples[lessonExample];
+  if(example){row=example.r;previous=[0,0,0,0,example.p];closed=true;}
+  else {
+    if(lessonPinned!=null)i=rows.findIndex(r=>+r[0]===lessonPinned);
+    else for(let j=rows.length-1;j>=0;j--)if(candleIsClosed(rows,j)){i=j;break;}
+    if(i<0){$('lessonTitle').textContent=lessonPinned!=null?'Candela non più disponibile nello storico caricato':'Attendo una candela chiusa confermata';$('lessonBody').replaceChildren();$('lessonMeta').textContent='';$('lessonStatus').textContent='In attesa';$('lessonAuto').disabled=lessonPinned==null;lessonRenderKey='';return;}
+    row=rows[i];previous=rows[i-1];closed=candleIsClosed(rows,i);
+  }
+  const key=[sym,tf,lessonExample,lessonPinned,closed,...row.slice(0,5),previous?.[4]].join('|');if(key===lessonRenderKey)return;lessonRenderKey=key;
+  const a=describeCandle(row,previous);if(!a){$('lessonTitle').textContent='Dati incompleti: spiegazione non disponibile';$('lessonBody').replaceChildren();return;}
+  $('lessonTitle').textContent=a.name;
+  $('lessonStatus').textContent=example?'ESEMPIO':!closed?'ANCORA IN FORMAZIONE':lessonPinned!=null?'CANDELA FISSATA':'AUTOMATICO · ULTIMA CHIUSA';
+  $('lessonMeta').textContent=example?'Prezzi inventati per imparare. Non sono quotazioni.':asset().name+' · '+tf+' · '+fullDate(+row[0])+' → '+fullDate(candleEnd(+row[0],tf))+' · '+Intl.DateTimeFormat().resolvedOptions().timeZone;
+  $('lessonAuto').disabled=!example&&lessonPinned==null;
+  const container=$('lessonBody');container.replaceChildren();
+  const picture=document.createElement('div');picture.className='lessonPicture';picture.innerHTML=lessonSVG(a,example?.hollow,example?.p);container.appendChild(picture);
+  const prose=document.createElement('div');container.appendChild(prose);
+  function section(title,body){const s=document.createElement('section'),h=document.createElement('h3'),p=document.createElement('p');h.textContent=title;p.textContent=body;s.append(h,p);prose.appendChild(s);}
+  section('La storia del prezzo',a.story);
+  if(!closed)section('Non è ancora finita','Questa spiegazione usa gli ultimi dati ricevuti. Forma, colore e prezzo finale possono ancora cambiare. Non è una chiusura confermata.');
+  section('Perché ha questa forma',a.shape);section('Che cosa puoi capire',a.meaning);section('Rispetto a prima',a.comparison);
+  if(example?.hollow){const rising=a.c>a.o,color=a.c>=example.p?'verde':'rossa';section('Perché è piena o vuota', 'Nello stile Hollow è '+(rising?'vuota perché finisce sopra':'piena perché finisce sotto')+' il proprio inizio. È '+color+' perché finisce '+(a.c>=example.p?'sopra':'sotto')+' la fine precedente di '+px(example.p)+'. Colore e riempimento fanno due confronti diversi.');}
+  else section('Piena non vuol dire in discesa','Il grafico dell’app usa candele standard: sono tutte piene. Verde significa fine sopra o uguale all’inizio; rosso significa fine sotto l’inizio. Il riempimento qui non è un segnale.');
+  section('Che cosa osservare dopo',a.watch);
+  section('Il limite di questa lettura','La forma non garantisce la prossima salita o discesa. Non mostra il numero di compratori e venditori, né l’ordine esatto dei movimenti. '+(!example&&tfPlan(tf).synthetic?'Questo intervallo unisce più candele: periodi incompleti o dati mancanti possono limitarne la lettura.':''));
+}
+function pinLesson(ts){lessonPinned=+ts;lessonExample='';$('lessonExamples').value='';renderLesson();}
+$('lessonAuto').onclick=()=>{lessonPinned=null;lessonExample='';lessonRenderKey='';$('lessonExamples').value='';selectedCandleTs=null;draw();};
+$('lessonExamples').onchange=()=>{lessonExample=$('lessonExamples').value;lessonPinned=null;lessonRenderKey='';renderLesson();};
+
 $("sym").onchange=start;$("tf").onchange=start;$("refresh").onclick=start;setInterval(evaluate,120000);if("caches" in window){caches.delete("coinstraight-v7").catch(()=>{})}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{})}start();setTimeout(evaluate,4000);
 </script>
 </body>
