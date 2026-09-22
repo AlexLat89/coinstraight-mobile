@@ -105,7 +105,7 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 <div class="hint">Crypto: Binance spot. Forex/oro/petrolio: biquote con streaming tick live via WebSocket/SignalR. Su forex e CFD la pressione rialzista/ribassista e stimata dal modello, non da un order book centrale. Le percentuali sono stime euristiche e non garantiscono movimenti futuri. L'app non esegue ordini.</div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 <script>
 const $=x=>document.getElementById(x),clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),avg=a=>a.reduce((s,v)=>s+v,0)/(a.length||1);
 const ASSETS={
@@ -128,7 +128,14 @@ function probs(sc,a,h){let bonus=h==="1h"?(a<.35?13:a<.65?6:0):h==="4h"?(a<.55?1
 function text(s){return s==="UP"?"SALE":s==="DOWN"?"SCENDE":"RESTA LI"}function cls(s){return s==="UP"?"up":s==="DOWN"?"down":"range"}
 function levels(k){let r=k.slice(-64),last=+r.at(-1)[4],hi=r.map(x=>+x[2]),lo=r.map(x=>+x[3]),res=Math.max(...hi),sup=Math.min(...lo),sh=[],sl=[];for(let i=2;i<r.length-2;i++){let h=+r[i][2],l=+r[i][3];if(h>+r[i-1][2]&&h>+r[i-2][2]&&h>=+r[i+1][2]&&h>=+r[i+2][2])sh.push(h);if(l<+r[i-1][3]&&l<+r[i-2][3]&&l<=+r[i+1][3]&&l<=+r[i+2][3])sl.push(l)}let a=sh.filter(x=>x>last).sort((a,b)=>a-b),b=sl.filter(x=>x<last).sort((a,b)=>b-a);return{res:a[0]||res,sup:b[0]||sup}}
 async function jfetch(url,ms=9000){const c=new AbortController(),tm=setTimeout(()=>c.abort(),ms);try{let r=await fetch(url,{cache:"no-store",signal:c.signal});clearTimeout(tm);if(!r.ok)throw Error("HTTP "+r.status);return await r.json()}catch(e){clearTimeout(tm);throw e}}
-async function bin(path){let err;for(const h of ["https://data-api.binance.vision","https://api1.binance.com","https://api2.binance.com","https://api3.binance.com","https://api.binance.com"]){try{return await jfetch(h+path,6000)}catch(e){err=e}}throw err||Error("Binance non disponibile")}
+async function bin(path){
+  const hosts=["https://data-api.binance.vision","https://api1.binance.com","https://api2.binance.com","https://api3.binance.com","https://api.binance.com"];
+  try{
+    return await Promise.any(hosts.map(h=>jfetch(h+path,6500)));
+  }catch{
+    throw Error("Binance non disponibile");
+  }
+}
 async function resolveBq(a){if(a.bq!=="SPCX")return a.bq;if(spcxResolved)return spcxResolved;try{await jfetch("https://biquote.io/api/SPCX?_="+Date.now(),5000);spcxResolved="SPCX";return spcxResolved}catch{}try{let d=await jfetch("https://biquote.io/api/symbols/search?q=SpaceX&limit=20&_="+Date.now(),6000),arr=Array.isArray(d)?d:(d.items||d.symbols||[]);let x=arr.find(z=>String(z.description||z.name||"").toLowerCase().includes("spacex"));if(x){spcxResolved=x.name||x.symbol;return spcxResolved}}catch{}throw Error("SpaceX non e disponibile sulla fonte gratuita in questo momento")}
 function bqRows(d){let bars=Array.isArray(d)?d:(d.bars||d.data||[]);return bars.map(b=>{let t=b.openTime??b.time??b.timestamp;if(typeof t==="string")t=Date.parse(t);else{t=+t;if(t<1e12)t*=1000}return[t,String(b.open),String(b.high),String(b.low),String(b.close),String(b.tickVolume??b.volume??0),t+60000]}).filter(r=>Number.isFinite(+r[0])&&Number.isFinite(+r[4])).sort((a,b)=>+a[0]-+b[0])}
 const BIN_TF=new Set(["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]);
@@ -337,7 +344,21 @@ function renderP(){
   $("tbody").innerHTML=[...P].reverse().slice(0,50).map(r=>'<tr><td>'+new Date(r.ts).toLocaleString()+'</td><td>'+px(r.price,r.sym)+'</td><td>'+text(r.s1)+'</td><td>'+cell(r.r1,r.o1,r.m1)+'</td><td>'+text(r.s4)+'</td><td>'+cell(r.r4,r.o4,r.m4)+'</td><td>'+text(r.s24)+'</td><td>'+cell(r.r24,r.o24,r.m24)+'</td></tr>').join("")||'<tr><td colspan="8">Nessuna previsione ancora.</td></tr>';
 }
 $("clearPred").onclick=()=>{if(confirm("Azzero lo storico previsioni?")){localStorage.removeItem(PKEY);renderP()}};
-async function refreshAll(){let needed=[...new Set([...req,tf])],all=await Promise.all(needed.map(x=>loadK(x)));K={};needed.forEach((x,i)=>K[x]=all[i]);await loadBook();let q=await quote();updateQuote(q);recalc();draw();renderP();$("dot").className="dot on";$("live").textContent=q.state==="closed"?"CHIUSO":"LIVE"}
+async function refreshAll(){
+  const needed=[...new Set([...req,tf])];
+  $("live").textContent="CARICO DATI";
+  const all=await Promise.all(needed.map(x=>loadK(x)));
+  K={};needed.forEach((x,i)=>K[x]=all[i]);
+  try{await loadBook()}catch{}
+  let q=null;
+  try{q=await quote();updateQuote(q)}catch{
+    const last=K[tf]?.at(-1)||K["5m"]?.at(-1);
+    if(last)updateQuote({p:+last[4],ch:NaN,hi:+last[2],lo:+last[3],state:"open",age:0});
+  }
+  recalc();draw();renderP();
+  $("dot").className="dot on";
+  $("live").textContent=q&&String(q.state).toLowerCase()==="closed"?"CHIUSO":"LIVE";
+}
 async function stop(){
     if(ws){try{ws.onclose=null;ws.close()}catch{}ws=null}
     if(quotePoll){clearInterval(quotePoll);quotePoll=null}
@@ -422,7 +443,7 @@ async function startBQWS(){
 async function start(){
   await stop();
   sym=$("sym").value;tf=$("tf").value;view=80;off=0;K={};selectedCandleTs=null;chartMeta=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';
-  $("dot").className="dot";$("live").textContent="CONNESSIONE";$("summary").textContent="Carico "+asset().name+"...";
+  $("dot").className="dot";$("live").textContent="CARICO DATI";$("summary").textContent="Carico "+asset().name+"...";
   try{
     await refreshAll();
 
@@ -455,11 +476,11 @@ async function start(){
       },60000);
     }
   }catch(e){
-    $("dot").className="dot bad";$("live").textContent="ERRORE";
-    $("summary").textContent=e.message+(sym==="SPCX"?" — il resto dei mercati continua a funzionare normalmente.":"");
+    $("dot").className="dot bad";$("live").textContent="RIPROVA";
+    $("summary").textContent=(e.message||"Dati non disponibili")+" — premi AGGIORNA per riprovare."+(sym==="SPCX"?" Il resto dei mercati continua a funzionare normalmente.":"");
   }
 }
-$("sym").onchange=start;$("tf").onchange=start;$("refresh").onclick=start;setInterval(evaluate,120000);if("caches" in window){caches.delete("coinstraight-v6").catch(()=>{})}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{})}start();setTimeout(evaluate,4000);
+$("sym").onchange=start;$("tf").onchange=start;$("refresh").onclick=start;setInterval(evaluate,120000);if("caches" in window){caches.delete("coinstraight-v7").catch(()=>{})}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{})}start();setTimeout(evaluate,4000);
 </script>
 </body>
 </html>
