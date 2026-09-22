@@ -22,6 +22,7 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 @media(max-width:720px){.grid3{grid-template-columns:1fr}.price{font-size:38px}canvas{height:390px}.controls select{flex:1;min-width:145px}}
 
 .lessonGrid{display:grid;grid-template-columns:minmax(240px,.7fr) minmax(0,1.3fr);gap:18px;margin-top:12px}.lessonPicture svg{width:100%;max-width:340px;display:block}.lessonPicture text{fill:var(--txt);font:12px system-ui}.lessonGrid h3{font-size:15px;color:var(--c);margin:0 0 6px}.lessonGrid p{font-size:14px;line-height:1.65;margin:0 0 16px}.lessonTools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.lessonTools select{max-width:100%;min-width:0}.lessonTools label{max-width:100%;font-size:13px}#lessonTitle{font-size:21px;margin:10px 0}#lessonStatus{color:var(--y);font-size:12px}#lessonMeta{font-size:12px;color:var(--mut);line-height:1.6}button:disabled{opacity:.5;cursor:default}@media(max-width:650px){.lessonGrid{grid-template-columns:1fr}.lessonPicture svg{max-width:310px;margin:auto}}
+.botGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0}.botMode{background:var(--c2);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}.botMode h3{margin:0 0 12px}.botMode p{line-height:1.55;overflow-wrap:anywhere}.botBadge{font-size:22px;font-weight:800;color:var(--y)}.botMode dl{display:grid;grid-template-columns:1fr 1fr;gap:8px}.botMode dd{margin:0;text-align:right}.botMode dt{color:var(--mut)}.botHistory{max-height:270px;overflow:auto}.botHistory p{border-top:1px solid var(--line);padding-top:10px;font-size:13px}.botControls{display:flex;gap:14px;flex-wrap:wrap;align-items:center}.botControls input{width:85px;padding:8px;background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:6px}@media(max-width:680px){.botGrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -68,6 +69,16 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 <div class="sub">PREZZO ADESSO</div><div id="price" class="price">--</div><div id="chg" class="sub">--</div>
 <div id="state" class="state range">ATTENDO DATI</div>
 <div id="summary" class="summary">Caricamento mercato...</div>
+</div>
+
+<div class="card" id="signalBot">
+<div class="sub">BOT SEGNALI · SOLO SIMULAZIONE</div>
+<h2>Dentro la giornata e per più giorni</h2>
+<p>“Compra” apre una prova virtuale; “Vendi” chiude quella prova. Non vengono usati soldi veri e non viene inviato nessun ordine a eToro.</p>
+<div class="botControls"><label><input id="botEnabled" type="checkbox"> Attiva le prove automatiche</label><label>Costo stimato per acquisto o vendita (%) <input id="botFee" type="number" min="0" max="5" step="0.01" value="0.15"></label></div>
+<p id="botHealth" class="hint" role="status">Attendo prezzi aggiornati…</p>
+<div class="botGrid">
+<article class="botMode"><h3>Nella giornata</h3><p class="sub">Controllo ogni candela di 15 minuti, con conferma a 1 ora. Durata massima della prova: 8 ore.</p><div id="bot-day-signal" class="botBadge" role="status">ASPETTA</div><p id="bot-day-reason">Carico le candele…</p><div id="bot-day-time" class="hint"></div><dl><dt>Ingresso simulato</dt><dd id="bot-day-entry">—</dd><dt>Esci se scende a</dt><dd id="bot-day-stop">—</dd><dt>Obiettivo di uscita</dt><dd id="bot-day-target">—</dd></dl><p id="bot-day-stats" class="sub"></p><div id="bot-day-history" class="botHistory"></div></article><article class="botMode"><h3>Per più giorni</h3><p class="sub">Controllo ogni candela di 4 ore, con conferma giornaliera. Durata massima della prova: 7 giorni.</p><div id="bot-swing-signal" class="botBadge" role="status">ASPETTA</div><p id="bot-swing-reason">Carico le candele…</p><div id="bot-swing-time" class="hint"></div><dl><dt>Ingresso simulato</dt><dd id="bot-swing-entry">—</dd><dt>Esci se scende a</dt><dd id="bot-swing-stop">—</dd><dt>Obiettivo di uscita</dt><dd id="bot-swing-target">—</dd></dl><p id="bot-swing-stats" class="sub"></p><div id="bot-swing-history" class="botHistory"></div></article></div><details><summary>Come decide? Leggi le regole e i limiti</summary><p>Compra solo dopo una candela completata: il prezzo deve superare tutti i massimi delle 20 candele precedenti. Deve inoltre trovarsi sopra la media recente, sia nel periodo breve sia in quello di conferma. La media dà più peso ai prezzi recenti (20 candele nel breve, 50 per la conferma).</p><p>L’uscita in perdita è distante 1,5 volte il movimento medio delle ultime 14 candele, con un minimo dello 0,4% nella giornata e del 2% per più giorni. L’obiettivo è il doppio di questa distanza. Esce anche se una candela chiude sotto la sua media recente o scade la durata massima. Nessuna regola garantisce un guadagno.</p><p>Un ingresso è valido solo entro 2 minuti dalla chiusura per la giornata, o 10 minuti per più giorni. Se il prezzo si è già allontanato troppo, aspetta. Prezzi e livelli sono in USDT, da Binance; possono differire da eToro. Il costo iniziale dello 0,15% per lato è un’ipotesi modificabile per commissioni e differenza di prezzo, non una tariffa eToro.</p><p>Le prove usano il primo prezzo aggiornato osservato, anche quando supera il livello di uscita. Funziona soltanto per la crypto selezionata, con questa pagina aperta e attiva. Chiudere la pagina, cambiare mercato o perdere aggiornamenti può far saltare movimenti: quelle prove vengono contrassegnate ed escluse dalla media. Nessuna ricostruzione retroattiva. Storico locale di questo browser, ultime 200 prove per modalità e mercato. Usa una sola scheda dell’app.</p></details>
 </div>
 
 <div class="card">
@@ -125,7 +136,7 @@ EURUSD:{p:"bq",name:"EUR/USD",bq:"EURUSD",prefix:""},GBPUSD:{p:"bq",name:"GBP/US
 XAUUSD:{p:"bq",name:"ORO",bq:"XAUUSD",prefix:"$"},USOIL:{p:"bq",name:"WTI",bq:"USOIL",prefix:"$"},UKOIL:{p:"bq",name:"BRENT",bq:"UKOIL",prefix:"$"},SPCX:{p:"bq",name:"SPACEX",bq:"SPCX",prefix:"$"}
 };
 let sym="SOLUSDT",tf="5m",K={},ws=null,quotePoll=null,candlePoll=null,bookPoll=null,bqConn=null,bqSubscribed=null,lastPrice=null,book={b:50,s:50,ok:false},view=80,off=0,drag=false,sx=0,so=0,spcxResolved=null,selectedCandleTs=null,chartMeta=null,pointerMoved=false,hoverPoint=null;
-const req=["5m","15m","1h","4h"],PKEY="csl_web_predictions_v1",PINT=15*60*1000;
+const req=["5m","15m","1h","4h","1d"],PKEY="csl_web_predictions_v1",PINT=15*60*1000;
 function asset(s=sym){return ASSETS[s]||ASSETS.SOLUSDT}
 function isCrypto(s=sym){return asset(s).p==="binance"}
 function fmt(x){x=+x;if(!Number.isFinite(x))return"--";return x>=1000?x.toLocaleString(undefined,{maximumFractionDigits:2}):x>=10?x.toFixed(4):x>=1?x.toFixed(5):x.toFixed(6)}
@@ -218,10 +229,10 @@ async function loadK(intv,limit=220,s=sym){
   const requestedAt=Date.now(),p=tfPlan(intv,s),raw=await loadRaw(p.base,sourceLimit(p,limit),s);
   const rows=aggregateRows(raw,p).slice(-limit);rows.fetchedAt=requestedAt;return rows;
 }
-async function quote(){let a=asset();if(a.p==="binance"){let t=await bin("/api/v3/ticker/24hr?symbol="+sym);return{p:+t.lastPrice,ch:+t.priceChangePercent,hi:+t.highPrice,lo:+t.lowPrice,state:"open",age:0}}let bs=await resolveBq(a),d=await jfetch("https://biquote.io/api/"+encodeURIComponent(bs)+"?_="+Date.now(),7000),p=+(d.mid??d.last??((+d.bid + +d.ask)/2)),ch=+(d.dayDiffPercent??d.changePercent),hi=+(d.dayHigh??d.high??p),lo=+(d.dayLow??d.low??p);return{p,ch,hi,lo,state:d.marketState||"open",age:+d.quoteAgeSeconds||0}}
+async function quote(){let a=asset();if(a.p==="binance"){let t=await bin("/api/v3/ticker/24hr?symbol="+sym);return{p:+t.lastPrice,ch:+t.priceChangePercent,hi:+t.highPrice,lo:+t.lowPrice,state:"open",sourceAt:+t.closeTime}}let bs=await resolveBq(a),d=await jfetch("https://biquote.io/api/"+encodeURIComponent(bs)+"?_="+Date.now(),7000),p=+(d.mid??d.last??((+d.bid + +d.ask)/2)),ch=+(d.dayDiffPercent??d.changePercent),hi=+(d.dayHigh??d.high??p),lo=+(d.dayLow??d.low??p);return{p,ch,hi,lo,state:d.marketState||"open",age:+d.quoteAgeSeconds||0}}
 async function loadBook(){if(!isCrypto()){book={b:50,s:50,ok:false};return}try{let d=await bin("/api/v3/depth?symbol="+sym+"&limit=100"),b=0,a=0;d.bids.forEach(x=>b+=+x[0]*+x[1]);d.asks.forEach(x=>a+=+x[0]*+x[1]);book.b=100*b/(a+b);book.s=100-book.b;book.ok=true}catch{book={b:50,s:50,ok:false}}}
 function setSig(h,p){$("s"+h).textContent=text(p.sig);$("s"+h).className=cls(p.sig);$("p"+h).textContent="sale "+p.u+"% • laterale "+p.f+"% • scende "+p.d+"% • forza "+p.conf+"%";$("u"+h).style.width=p.u+"%";$("f"+h).style.width=p.f+"%";$("d"+h).style.width=p.d+"%"}
-function recalc(){if(!req.every(x=>K[x]?.length))return;let a5=analyze(K["5m"],6),a15=analyze(K["15m"],4),a1=analyze(K["1h"],3),a4=analyze(K["4h"],2);if(!isCrypto()){let ps=.38*a5.t+.34*a15.t+.2*a1.t+.08*a4.t,b=clamp(50+ps*7.5,15,85);book={b,s:100-b,ok:true}}let bt=book.ok?clamp((book.b-book.s)/(isCrypto()?18:28),-1.1,1.1):0,p1=probs(1.45*a5.t+1.35*a15.t+.8*a1.t+.2*a4.t+bt,a15.a,"1h"),p4=probs(.55*a5.t+1.2*a15.t+1.55*a1.t+.75*a4.t+.4*bt,a1.a,"4h"),p24=probs(.15*a5.t+.45*a15.t+1.25*a1.t+1.85*a4.t+.15*bt,a4.a,"24h"),lv=levels(K["15m"]);
+function recalc(){runBots();if(!req.every(x=>K[x]?.length))return;let a5=analyze(K["5m"],6),a15=analyze(K["15m"],4),a1=analyze(K["1h"],3),a4=analyze(K["4h"],2);if(!isCrypto()){let ps=.38*a5.t+.34*a15.t+.2*a1.t+.08*a4.t,b=clamp(50+ps*7.5,15,85);book={b,s:100-b,ok:true}}let bt=book.ok?clamp((book.b-book.s)/(isCrypto()?18:28),-1.1,1.1):0,p1=probs(1.45*a5.t+1.35*a15.t+.8*a1.t+.2*a4.t+bt,a15.a,"1h"),p4=probs(.55*a5.t+1.2*a15.t+1.55*a1.t+.75*a4.t+.4*bt,a1.a,"4h"),p24=probs(.15*a5.t+.45*a15.t+1.25*a1.t+1.85*a4.t+.15*bt,a4.a,"24h"),lv=levels(K["15m"]);
 setSig("1",p1);setSig("4",p4);setSig("24",p24);$("buy").style.width=book.b+"%";$("sell").style.width=book.s+"%";$("bt").textContent=book.b.toFixed(0)+"%";$("st").textContent=book.s.toFixed(0)+"%";
 $("buyLabel").textContent=isCrypto()?"Compratori":"Rialzista";$("sellLabel").textContent=isCrypto()?"Venditori":"Ribassista";$("pressureTitle").textContent=isCrypto()?"COMPRATORI / VENDITORI":"PRESSIONE STIMATA DEL MERCATO";
 let hasVol=K["15m"].some(x=>+x[5]>0);$("vol").textContent=hasVol?(a15.vr>1.8?"molto alto":a15.vr>1.25?"alto":a15.vr<.65?"basso":"normale"):"N/D";$("rsiTxt").textContent=a15.r>70?"molto alto":a15.r<30?"molto basso":a15.r>60?"un po alto":a15.r<40?"un po basso":"normale";$("res").textContent=px(lv.res);$("sup").textContent=px(lv.sup);
@@ -229,7 +240,7 @@ $("state").textContent=(p1.sig==="UP"?"PIU FORZA IN SALITA":p1.sig==="DOWN"?"PIU
 let pr=isCrypto()?(book.b>58?"compratori piu presenti":book.s>58?"venditori piu presenti":"book abbastanza equilibrato"):(book.b>58?"pressione stimata piu rialzista":book.s>58?"pressione stimata piu ribassista":"pressione stimata equilibrata");
 $("summary").textContent=asset().name+": "+text(p1.sig).toLowerCase()+" nel breve; "+pr+". Sopra "+px(lv.res)+" la salita sarebbe piu credibile; sotto "+px(lv.sup)+" aumenta il rischio di discesa.";
 record(a15.last,p1,p4,p24)}
-function updateQuote(q){if(!Number.isFinite(q.p))return;lastPrice=q.p;$("price").textContent=px(q.p);let ch=Number.isFinite(q.ch)?((q.ch>=0?"+":"")+q.ch.toFixed(2)+"%"):"--";let freshness=isCrypto()?"live":(Number.isFinite(+q.age)?("ultimo tick "+Math.max(0,Math.round(+q.age))+"s fa"):"stream");$("chg").textContent=(String(q.state).toLowerCase()==="closed"?"Mercato chiuso • ":"")+"variazione "+ch+" • max "+px(q.hi)+" • min "+px(q.lo)+" • "+freshness}
+function updateQuote(q){if(!Number.isFinite(q.p))return;acceptBotQuote(q);lastPrice=q.p;$("price").textContent=px(q.p);let ch=Number.isFinite(q.ch)?((q.ch>=0?"+":"")+q.ch.toFixed(2)+"%"):"--";let freshness=isCrypto()?"live":(Number.isFinite(+q.age)?("ultimo tick "+Math.max(0,Math.round(+q.age))+"s fa"):"stream");$("chg").textContent=(String(q.state).toLowerCase()==="closed"?"Mercato chiuso • ":"")+"variazione "+ch+" • max "+px(q.hi)+" • min "+px(q.lo)+" • "+freshness}
 function axisLabel(ts){
   const d=new Date(ts),dd=String(d.getDate()).padStart(2,"0"),mm=String(d.getMonth()+1).padStart(2,"0"),
         yy=String(d.getFullYear()).slice(-2),yyyy=d.getFullYear(),
@@ -433,7 +444,7 @@ async function refreshAll(epoch=marketGeneration){
   let q=null;
   try{q=await quote();if(epoch!==marketGeneration)return false;updateQuote(q)}catch{
     const last=K[tf]?.at(-1)||K["5m"]?.at(-1);
-    if(last)updateQuote({p:+last[4],ch:NaN,hi:+last[2],lo:+last[3],state:"open",age:0});
+    if(last)updateQuote({p:+last[4],ch:NaN,hi:+last[2],lo:+last[3],state:"open",historical:true});
   }
   if(epoch!==marketGeneration)return false;
   recalc();draw();renderP();
@@ -461,7 +472,7 @@ function startCryptoWS(){
   ws.onmessage=e=>{
     if(epoch!==marketGeneration)return;
     let d;try{d=JSON.parse(e.data).data}catch{return}if(!d)return;
-    if(d.e==="24hrTicker")updateQuote({p:+d.c,ch:+d.P,hi:+d.h,lo:+d.l,state:"open"});
+    if(d.e==="24hrTicker")updateQuote({p:+d.c,ch:+d.P,hi:+d.h,lo:+d.l,sourceAt:+d.E,state:"open"});
     else if(d.e==="kline"){
       let k=d.k,row=[k.t,String(k.o),String(k.h),String(k.l),String(k.c),String(k.v),k.T];row.closedConfirmed=k.x===true;row.liveUpdatedAt=Date.now();
       if(K[k.i]){let a=K[k.i],idx=a.findIndex(r=>+r[0]===k.t);if(idx>=0)a[idx]=row;else if(!a.length||k.t>+a.at(-1)[0]){a.push(row);if(a.length>240)a.shift()}}
@@ -539,9 +550,10 @@ async function startBQWS(){
 }
 async function start(){
   const epoch=++marketGeneration;
+  pauseBots();
   await stop();if(epoch!==marketGeneration)return;
   resetLesson();
-  sym=$("sym").value;tf=$("tf").value;view=80;off=0;K={};selectedCandleTs=null;hoverPoint=null;chartMeta=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';
+  sym=$("sym").value;renderBots();tf=$("tf").value;view=80;off=0;K={};selectedCandleTs=null;hoverPoint=null;chartMeta=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';
   $("dot").className="dot";$("live").textContent="CARICO DATI";$("summary").textContent="Carico "+asset().name+"...";
   try{
     await refreshAll(epoch);if(epoch!==marketGeneration)return;
@@ -671,6 +683,74 @@ function renderLesson(){
 function pinLesson(ts){lessonPinned=+ts;lessonExample='';$('lessonExamples').value='';renderLesson();}
 $('lessonAuto').onclick=()=>{lessonPinned=null;lessonExample='';lessonRenderKey='';$('lessonExamples').value='';selectedCandleTs=null;draw();};
 $('lessonExamples').onchange=()=>{lessonExample=$('lessonExamples').value;lessonPinned=null;lessonRenderKey='';renderLesson();};
+
+
+const BOTKEY='csl_signal_bot_v1',BOTMODES={day:{tf:'15m',confirm:'1h',ttl:120000,max:8*3600000,min:.004},swing:{tf:'4h',confirm:'1d',ttl:600000,max:7*86400000,min:.02}};
+let botDB;try{botDB=JSON.parse(localStorage.getItem(BOTKEY)||'null')}catch{}
+if(!botDB||botDB.version!==1)botDB={version:1,enabled:false,fee:.15,markets:{}};
+let botQuote=null,botSaveAt=0,botStorageError=false;
+for(const market of Object.values(botDB.markets))for(const state of Object.values(market))if(state.pos)state.pos.gap=true;
+$('botEnabled').checked=botDB.enabled;$('botFee').value=botDB.fee;
+function botState(m){const market=botDB.markets[sym]||(botDB.markets[sym]={});return market[m]||(market[m]={seen:null,pos:null,trades:[],signal:'ASPETTA',reason:'Attendo una nuova candela completata.'})}
+function saveBots(force=false){if(!force&&Date.now()-botSaveAt<10000)return;try{localStorage.setItem(BOTKEY,JSON.stringify(botDB));botSaveAt=Date.now();botStorageError=false}catch{botStorageError=true}}
+function pauseBots(){for(const market of Object.values(botDB.markets))for(const state of Object.values(market))if(state.pos)state.pos.gap=true;botQuote=null;saveBots(true)}
+function acceptBotQuote(q){if(!isCrypto()||q.historical||!(q.p>0)||!Number.isFinite(q.sourceAt)||Date.now()-q.sourceAt>15000||q.sourceAt>Date.now()+5000)return;if(botQuote&&q.sourceAt<botQuote.sourceAt)return;botQuote={p:q.p,at:Date.now(),sourceAt:q.sourceAt,sym};runBots()}
+function botClosed(intv,now){const rows=K[intv]||[];return rows.filter((r,i)=>candleIsClosed(rows,i,intv,now))}
+function botSetup(m,now=Date.now()){
+ const cfg=BOTMODES[m],rows=botClosed(cfg.tf,now),confirm=botClosed(cfg.confirm,now);
+ if(rows.length<51||confirm.length<51)return null;
+ const last=rows.at(-1),end=candleEnd(+last[0],cfg.tf),confEnd=candleEnd(+confirm.at(-1)[0],cfg.confirm);
+ if(now-end>candleEnd(+last[0],cfg.tf)-(+last[0])+60000||now-confEnd>candleEnd(+confirm.at(-1)[0],cfg.confirm)-(+confirm.at(-1)[0])+60000)return null;
+ for(const rs of [rows.slice(-51),confirm.slice(-51)])for(const r of rs)if(![1,2,3,4].every(i=>Number.isFinite(+r[i])&&+r[i]>0)||+r[2]<Math.max(+r[1],+r[4])||+r[3]>Math.min(+r[1],+r[4]))return null;
+ const close=+last[4],mean=ema(rows.map(r=>+r[4]),20),bigMean=ema(confirm.map(r=>+r[4]),50),high=Math.max(...rows.slice(-21,-1).map(r=>+r[2]));
+ const distance=Math.max(cfg.min,atr(rows,14)/100*1.5);
+ return {id:+last[0],end,close,distance,buy:close>high&&close>mean&&+confirm.at(-1)[4]>bigMean,exit:close<mean};
+}
+function closeBot(state,p,now,why){const pos=state.pos,net=100*((p*(1-pos.fee))/(pos.entry*(1+pos.fee))-1);state.trades.unshift({...pos,exit:p,end:now,net,why});state.trades=state.trades.slice(0,200);state.pos=null;state.signal='VENDI · PROVA CHIUSA';state.reason=why;state.eventAt=now;saveBots(true)}
+function runBots(){
+ const now=Date.now(),fresh=botQuote&&botQuote.sym===sym&&now-botQuote.sourceAt<=15000;
+ if(!isCrypto()||!fresh){renderBots();return}
+ for(const [m,cfg] of Object.entries(BOTMODES)){
+  const s=botState(m),p=botQuote.p,setup=botSetup(m,now);
+  if(s.pos){
+   if(now-s.pos.lastSeen>30000)s.pos.gap=true;s.pos.lastSeen=now;
+   const why=p<=s.pos.stop?'Il prezzo ha raggiunto o superato il limite di perdita.':p>=s.pos.target?'Il prezzo ha raggiunto o superato l’obiettivo.':now-s.pos.at>=cfg.max?'È terminato il tempo massimo previsto per la prova.':setup&&setup.id!==s.seen&&setup.exit?'Una candela completata è scesa sotto la sua media recente.':null;
+   if(setup)s.seen=setup.id;
+   if(why){closeBot(s,p,now,why);continue}
+   s.signal='MANTIENI · PROVA APERTA';s.reason='La prova continua: il prezzo non ha ancora raggiunto una delle condizioni di uscita.';continue;
+  }
+  if(!botDB.enabled){s.signal='PAUSA';s.reason='Attiva le prove automatiche per registrare i prossimi segnali.';continue}
+  if(!setup){s.signal='ASPETTA';s.reason='Servono candele complete e aggiornate in entrambi i periodi.';continue}
+  if(s.seen===setup.id)continue;
+  s.seen=setup.id;s.eventAt=now;s.candleAt=setup.end;
+  const fee=Number(botDB.fee)/100;
+  if(now-setup.end>cfg.ttl){s.signal='ASPETTA';s.reason='L’ultima candela è troppo vecchia per aprire una nuova prova. Attendo la prossima chiusura.'}
+  else if(!setup.buy){s.signal='ASPETTA';s.reason='Manca un superamento dei massimi precedenti accompagnato da una salita anche nel periodo più lungo.'}
+  else if(Math.abs(p/setup.close-1)>setup.distance*.5){s.signal='ASPETTA';s.reason='Il prezzo si è già allontanato troppo dalla candela: non inseguo il movimento.'}
+  else if(setup.distance>=.2||setup.distance*2<=fee*2){s.signal='ASPETTA';s.reason='Movimento troppo ampio o costi troppo alti rispetto all’obiettivo.'}
+  else{s.pos={entry:p,stop:p*(1-setup.distance),target:p*(1+2*setup.distance),at:now,lastSeen:now,fee,gap:false};s.signal='COMPRA · PROVA APERTA';s.reason='Il prezzo ha superato i massimi delle 20 candele precedenti. Anche il periodo più lungo conferma la salita. Ingresso virtuale al prezzo appena ricevuto.'}
+  saveBots(true);
+ }
+ saveBots();renderBots();
+}
+function renderBots(){
+ const now=Date.now(),fresh=botQuote&&botQuote.sym===sym&&now-botQuote.sourceAt<=15000;
+ $('botHealth').textContent=botStorageError?'Lo storico non può essere salvato in questo browser.':!isCrypto()?'Queste due strategie sono disponibili per le crypto. Seleziona BTC, SOL, XRP o un’altra crypto.':!fresh?'Prezzo non aggiornato: nessun nuovo ingresso o uscita simulata finché non torna la connessione.':asset().name+' / USDT · prezzo '+fmt(botQuote.p)+' · aggiornamento '+new Date(botQuote.sourceAt).toLocaleTimeString('it-IT')+' · prove solo mentre questa pagina riceve dati.';
+ for(const m of Object.keys(BOTMODES)){
+  const s=botState(m),pos=s.pos,last=s.trades[0],display=pos||last;
+  const badge=$('bot-'+m+'-signal');badge.textContent=!isCrypto()?'NON DISPONIBILE':!fresh?'ATTENDO DATI':s.signal;badge.style.color=fresh&&s.signal.startsWith('COMPRA')?'var(--g)':fresh&&s.signal.startsWith('VENDI')?'var(--r)':'var(--y)';
+  $('bot-'+m+'-reason').textContent=s.reason+(pos?.gap?' Attenzione: questa prova ha avuto un’interruzione dei dati.':'');
+  $('bot-'+m+'-time').textContent=s.eventAt?'Ultima decisione: '+fullDate(s.eventAt)+(s.candleAt?' · candela chiusa: '+fullDate(s.candleAt):''):'';
+  for(const field of ['entry','stop','target'])$('bot-'+m+'-'+field).textContent=display?fmt(display[field])+' USDT'+(!pos?' (ultima prova)':''):'—';
+  const valid=s.trades.filter(t=>!t.gap),wins=valid.filter(t=>t.net>0).length;
+  $('bot-'+m+'-stats').textContent=valid.length?valid.length+' prove senza interruzioni · '+wins+' positive · media netta per prova '+avg(valid.map(t=>t.net)).toFixed(2)+'% · '+(s.trades.length-valid.length)+' escluse per dati mancanti.':'Nessuna prova conclusa senza interruzioni. Nessun rendimento ancora misurabile.';
+  const history=$('bot-'+m+'-history');history.replaceChildren();
+  for(const t of s.trades.slice(0,8)){const row=document.createElement('p');row.textContent=new Date(t.end).toLocaleString('it-IT')+' · '+fmt(t.entry)+' → '+fmt(t.exit)+' USDT · netto '+t.net.toFixed(2)+'% · costo per lato '+(t.fee*100).toFixed(2)+'%'+(t.gap?' · DATI INTERROTTI: esclusa dalla media':'')+' · '+t.why;history.append(row)}
+ }
+}
+$('botEnabled').onchange=()=>{botDB.enabled=$('botEnabled').checked;for(const m of Object.keys(BOTMODES)){const s=botState(m);if(!s.pos){s.seen=botSetup(m)?.id??null;s.signal=botDB.enabled?'ASPETTA':'PAUSA';s.reason=botDB.enabled?'Attendo la prossima candela completata.':'Nuovi ingressi in pausa. Le prove già aperte continuano fino all’uscita.'}}saveBots(true);renderBots()};
+$('botFee').onchange=()=>{const n=Number($('botFee').value);if(Number.isFinite(n)&&n>=0&&n<=5)botDB.fee=n;$('botFee').value=botDB.fee;saveBots(true);renderBots()};
+setInterval(runBots,5000);
 
 $("sym").onchange=start;$("tf").onchange=start;$("refresh").onclick=start;setInterval(evaluate,120000);if("caches" in window){caches.delete("coinstraight-v7").catch(()=>{})}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{})}start();setTimeout(evaluate,4000);
 </script>
