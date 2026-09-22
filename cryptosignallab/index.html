@@ -16,7 +16,7 @@
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sig{background:var(--c2);padding:11px;border-radius:12px}.sig b{display:block;font-size:21px;margin:5px 0}.acc{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;line-height:1.45}.acc .good{color:var(--g);font-weight:800}.acc .bad{color:var(--r);font-weight:800}.bar{height:8px;display:flex;border-radius:99px;overflow:hidden;background:#0c1118;margin-top:8px}.bu{background:var(--g)}.bf{background:var(--y)}.bd{background:var(--r)}
 .row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}
 .press{height:17px;border-radius:99px;overflow:hidden;display:flex;background:#0d1219;margin:10px 0}.buy{background:var(--g)}.sell{background:var(--r)}
-canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12px;touch-action:none}.hint{font-size:11px;color:var(--mut);margin-top:7px}
+canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12px;touch-action:none;cursor:crosshair}.candleDetails{margin:10px 0 8px;background:var(--c2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.5}.candleDetails b{color:var(--c)}.candleDetails .upv{color:var(--g);font-weight:800}.candleDetails .downv{color:var(--r);font-weight:800}.hint{font-size:11px;color:var(--mut);margin-top:7px}
 .tablewrap{overflow:auto}.tbl{width:100%;border-collapse:collapse;font-size:12px}.tbl th,.tbl td{padding:8px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}.tbl th{color:var(--mut)}
 .ok{color:var(--g);font-weight:800}.no{color:var(--r);font-weight:800}.wait{color:var(--y);font-weight:800}
 @media(max-width:720px){.grid3{grid-template-columns:1fr}.price{font-size:38px}canvas{height:390px}.controls select{flex:1;min-width:145px}}
@@ -44,7 +44,20 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 <option value="SPCX">SpaceX (SPCX)</option>
 </optgroup>
 </select>
-<select id="tf"><option value="1m">1 minuto</option><option value="5m" selected>5 minuti</option><option value="15m">15 minuti</option><option value="1h">1 ora</option></select>
+<select id="tf">
+<optgroup label="MINUTI">
+<option value="1m">1 minuto</option><option value="3m">3 minuti</option><option value="5m" selected>5 minuti</option><option value="15m">15 minuti</option><option value="30m">30 minuti</option><option value="45m">45 minuti</option>
+</optgroup>
+<optgroup label="ORE">
+<option value="1h">1 ora</option><option value="2h">2 ore</option><option value="3h">3 ore</option><option value="4h">4 ore</option><option value="6h">6 ore</option><option value="8h">8 ore</option><option value="12h">12 ore</option>
+</optgroup>
+<optgroup label="GIORNI / SETTIMANE">
+<option value="1d">1 giorno</option><option value="3d">3 giorni</option><option value="1w">1 settimana</option>
+</optgroup>
+<optgroup label="MESI / ANNI">
+<option value="1M">1 mese</option><option value="3M">3 mesi</option><option value="6M">6 mesi</option><option value="1Y">1 anno</option>
+</optgroup>
+</select>
 <button id="refresh">AGGIORNA</button>
 </div>
 </header>
@@ -73,8 +86,9 @@ canvas{width:100%;height:440px;display:block;background:#0f151e;border-radius:12
 
 <div class="card">
 <div class="top"><div><div class="sub">CANDELE</div><div id="ohlc" class="sub">--</div></div><div><button id="minus">−</button><button id="plus">+</button><button id="reset">RESET</button></div></div>
+<div id="candleDetails" class="candleDetails">Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.</div>
 <canvas id="chart" width="1000" height="500"></canvas>
-<div class="hint">In basso: giorno + ora locale • Rotella mouse = zoom • trascina = scorri • doppio click = reset</div>
+<div class="hint">Clic/tap = dettagli candela • In basso: data e ora • Rotella = zoom • trascina = scorri • doppio click = reset</div>
 </div>
 
 <div class="card">
@@ -99,7 +113,7 @@ SOLUSDT:{p:"binance",name:"SOL",prefix:"$"},BTCUSDT:{p:"binance",name:"BTC",pref
 EURUSD:{p:"bq",name:"EUR/USD",bq:"EURUSD",prefix:""},GBPUSD:{p:"bq",name:"GBP/USD",bq:"GBPUSD",prefix:""},AUDUSD:{p:"bq",name:"AUD/USD",bq:"AUDUSD",prefix:""},USDJPY:{p:"bq",name:"USD/JPY",bq:"USDJPY",prefix:""},USDCAD:{p:"bq",name:"USD/CAD",bq:"USDCAD",prefix:""},USDCHF:{p:"bq",name:"USD/CHF",bq:"USDCHF",prefix:""},NZDUSD:{p:"bq",name:"NZD/USD",bq:"NZDUSD",prefix:""},EURGBP:{p:"bq",name:"EUR/GBP",bq:"EURGBP",prefix:""},
 XAUUSD:{p:"bq",name:"ORO",bq:"XAUUSD",prefix:"$"},USOIL:{p:"bq",name:"WTI",bq:"USOIL",prefix:"$"},UKOIL:{p:"bq",name:"BRENT",bq:"UKOIL",prefix:"$"},SPCX:{p:"bq",name:"SPACEX",bq:"SPCX",prefix:"$"}
 };
-let sym="SOLUSDT",tf="5m",K={},ws=null,quotePoll=null,candlePoll=null,bookPoll=null,bqConn=null,bqSubscribed=null,lastPrice=null,book={b:50,s:50,ok:false},view=80,off=0,drag=false,sx=0,so=0,spcxResolved=null;
+let sym="SOLUSDT",tf="5m",K={},ws=null,quotePoll=null,candlePoll=null,bookPoll=null,bqConn=null,bqSubscribed=null,lastPrice=null,book={b:50,s:50,ok:false},view=80,off=0,drag=false,sx=0,so=0,spcxResolved=null,selectedCandleTs=null,chartMeta=null,pointerMoved=false;
 const req=["5m","15m","1h","4h"],PKEY="csl_web_predictions_v1",PINT=15*60*1000;
 function asset(s=sym){return ASSETS[s]||ASSETS.SOLUSDT}
 function isCrypto(s=sym){return asset(s).p==="binance"}
@@ -117,7 +131,75 @@ async function jfetch(url,ms=9000){const c=new AbortController(),tm=setTimeout((
 async function bin(path){let err;for(const h of ["https://data-api.binance.vision","https://api1.binance.com","https://api2.binance.com","https://api3.binance.com","https://api.binance.com"]){try{return await jfetch(h+path,6000)}catch(e){err=e}}throw err||Error("Binance non disponibile")}
 async function resolveBq(a){if(a.bq!=="SPCX")return a.bq;if(spcxResolved)return spcxResolved;try{await jfetch("https://biquote.io/api/SPCX?_="+Date.now(),5000);spcxResolved="SPCX";return spcxResolved}catch{}try{let d=await jfetch("https://biquote.io/api/symbols/search?q=SpaceX&limit=20&_="+Date.now(),6000),arr=Array.isArray(d)?d:(d.items||d.symbols||[]);let x=arr.find(z=>String(z.description||z.name||"").toLowerCase().includes("spacex"));if(x){spcxResolved=x.name||x.symbol;return spcxResolved}}catch{}throw Error("SpaceX non e disponibile sulla fonte gratuita in questo momento")}
 function bqRows(d){let bars=Array.isArray(d)?d:(d.bars||d.data||[]);return bars.map(b=>{let t=b.openTime??b.time??b.timestamp;if(typeof t==="string")t=Date.parse(t);else{t=+t;if(t<1e12)t*=1000}return[t,String(b.open),String(b.high),String(b.low),String(b.close),String(b.tickVolume??b.volume??0),t+60000]}).filter(r=>Number.isFinite(+r[0])&&Number.isFinite(+r[4])).sort((a,b)=>+a[0]-+b[0])}
-async function loadK(intv,limit=220,s=sym){let a=asset(s);if(a.p==="binance")return bin("/api/v3/klines?symbol="+s+"&interval="+intv+"&limit="+limit);let bs=await resolveBq(a),d=await jfetch("https://biquote.io/api/"+encodeURIComponent(bs)+"/ohlc?interval="+intv+"&limit="+limit+"&_="+Date.now(),9000),rows=bqRows(d);if(!rows.length)throw Error("Nessuna candela disponibile");return rows.slice(-limit)}
+const BIN_TF=new Set(["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]);
+const BQ_TF=new Set(["1m","5m","15m","30m","1h","4h","1d"]);
+function tfPlan(intv,s=sym){
+  const a=asset(s);
+  if(a.p==="binance"&&BIN_TF.has(intv))return{base:intv,synthetic:false};
+  if(a.p==="bq"&&BQ_TF.has(intv))return{base:intv,synthetic:false};
+  const fixed={
+    "3m":{base:"1m",ms:3*60000},"45m":{base:"15m",ms:45*60000},
+    "2h":{base:"1h",ms:2*3600000},"3h":{base:"1h",ms:3*3600000},
+    "6h":{base:"1h",ms:6*3600000},"8h":{base:"4h",ms:8*3600000},
+    "12h":{base:"4h",ms:12*3600000},"3d":{base:"1d",ms:3*86400000}
+  };
+  if(fixed[intv])return{...fixed[intv],synthetic:true,kind:"fixed"};
+  if(intv==="1w")return{base:"1d",synthetic:true,kind:"week"};
+  if(intv==="1M")return a.p==="binance"?{base:"1M",synthetic:false}:{base:"1d",synthetic:true,kind:"month",step:1};
+  if(intv==="3M")return{base:a.p==="binance"?"1M":"1d",synthetic:true,kind:"month",step:3};
+  if(intv==="6M")return{base:a.p==="binance"?"1M":"1d",synthetic:true,kind:"month",step:6};
+  if(intv==="1Y")return{base:a.p==="binance"?"1M":"1d",synthetic:true,kind:"month",step:12};
+  return{base:"1h",synthetic:true,kind:"fixed",ms:3600000};
+}
+function groupStart(ts,p){
+  const d=new Date(ts);
+  if(p.kind==="fixed")return Math.floor(ts/p.ms)*p.ms;
+  if(p.kind==="week"){
+    const day=(d.getUTCDay()+6)%7;
+    return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()-day);
+  }
+  if(p.kind==="month"){
+    const step=p.step||1,m=Math.floor(d.getUTCMonth()/step)*step;
+    return Date.UTC(d.getUTCFullYear(),m,1);
+  }
+  return ts;
+}
+function aggregateRows(rows,p){
+  if(!p.synthetic)return rows;
+  const map=new Map();
+  for(const r of rows){
+    const key=groupStart(+r[0],p);
+    if(!map.has(key))map.set(key,[key,r[1],r[2],r[3],r[4],r[5],r[6]]);
+    else{
+      const g=map.get(key);
+      g[2]=String(Math.max(+g[2],+r[2]));g[3]=String(Math.min(+g[3],+r[3]));
+      g[4]=r[4];g[5]=String((+g[5]||0)+(+r[5]||0));g[6]=r[6];
+    }
+  }
+  return[...map.values()].sort((a,b)=>+a[0]-+b[0]);
+}
+function sourceLimit(p,want){
+  if(!p.synthetic)return Math.min(1000,want);
+  if(p.kind==="fixed"){
+    const baseMs={"1m":60000,"15m":900000,"1h":3600000,"4h":14400000,"1d":86400000}[p.base]||60000;
+    return Math.min(1000,Math.max(240,Math.ceil(want*(p.ms/baseMs))+20));
+  }
+  if(p.kind==="week")return 1000;
+  if(p.kind==="month"&&p.base==="1M")return Math.min(1000,Math.max(120,want*(p.step||1)+12));
+  if(p.kind==="month")return 1000;
+  return 1000;
+}
+async function loadRaw(intv,limit,s=sym){
+  const a=asset(s),n=Math.min(1000,Math.max(2,limit));
+  if(a.p==="binance")return bin("/api/v3/klines?symbol="+s+"&interval="+intv+"&limit="+n);
+  const bs=await resolveBq(a),d=await jfetch("https://biquote.io/api/"+encodeURIComponent(bs)+"/ohlc?interval="+intv+"&limit="+n+"&_="+Date.now(),9000),rows=bqRows(d);
+  if(!rows.length)throw Error("Nessuna candela disponibile");
+  return rows;
+}
+async function loadK(intv,limit=220,s=sym){
+  const p=tfPlan(intv,s),raw=await loadRaw(p.base,sourceLimit(p,limit),s);
+  return aggregateRows(raw,p).slice(-limit);
+}
 async function quote(){let a=asset();if(a.p==="binance"){let t=await bin("/api/v3/ticker/24hr?symbol="+sym);return{p:+t.lastPrice,ch:+t.priceChangePercent,hi:+t.highPrice,lo:+t.lowPrice,state:"open",age:0}}let bs=await resolveBq(a),d=await jfetch("https://biquote.io/api/"+encodeURIComponent(bs)+"?_="+Date.now(),7000),p=+(d.mid??d.last??((+d.bid + +d.ask)/2)),ch=+(d.dayDiffPercent??d.changePercent),hi=+(d.dayHigh??d.high??p),lo=+(d.dayLow??d.low??p);return{p,ch,hi,lo,state:d.marketState||"open",age:+d.quoteAgeSeconds||0}}
 async function loadBook(){if(!isCrypto()){book={b:50,s:50,ok:false};return}try{let d=await bin("/api/v3/depth?symbol="+sym+"&limit=100"),b=0,a=0;d.bids.forEach(x=>b+=+x[0]*+x[1]);d.asks.forEach(x=>a+=+x[0]*+x[1]);book.b=100*b/(a+b);book.s=100-book.b;book.ok=true}catch{book={b:50,s:50,ok:false}}}
 function setSig(h,p){$("s"+h).textContent=text(p.sig);$("s"+h).className=cls(p.sig);$("p"+h).textContent="sale "+p.u+"% • laterale "+p.f+"% • scende "+p.d+"% • forza "+p.conf+"%";$("u"+h).style.width=p.u+"%";$("f"+h).style.width=p.f+"%";$("d"+h).style.width=p.d+"%"}
@@ -130,37 +212,51 @@ let pr=isCrypto()?(book.b>58?"compratori piu presenti":book.s>58?"venditori piu 
 $("summary").textContent=asset().name+": "+text(p1.sig).toLowerCase()+" nel breve; "+pr+". Sopra "+px(lv.res)+" la salita sarebbe piu credibile; sotto "+px(lv.sup)+" aumenta il rischio di discesa.";
 record(a15.last,p1,p4,p24)}
 function updateQuote(q){if(!Number.isFinite(q.p))return;lastPrice=q.p;$("price").textContent=px(q.p);let ch=Number.isFinite(q.ch)?((q.ch>=0?"+":"")+q.ch.toFixed(2)+"%"):"--";let freshness=isCrypto()?"live":(Number.isFinite(+q.age)?("ultimo tick "+Math.max(0,Math.round(+q.age))+"s fa"):"stream");$("chg").textContent=(String(q.state).toLowerCase()==="closed"?"Mercato chiuso • ":"")+"variazione "+ch+" • max "+px(q.hi)+" • min "+px(q.lo)+" • "+freshness}
+function axisLabel(ts){
+  const d=new Date(ts),dd=String(d.getDate()).padStart(2,"0"),mm=String(d.getMonth()+1).padStart(2,"0"),
+        yy=String(d.getFullYear()).slice(-2),yyyy=d.getFullYear(),
+        hh=String(d.getHours()).padStart(2,"0"),mi=String(d.getMinutes()).padStart(2,"0");
+  if(tf.endsWith("m")||tf.endsWith("h"))return dd+"/"+mm+" "+hh+":"+mi;
+  if(tf==="1d"||tf==="3d"||tf==="1w")return dd+"/"+mm+"/"+yy;
+  if(tf==="1M"||tf==="3M"||tf==="6M")return mm+"/"+yyyy;
+  if(tf==="1Y")return String(yyyy);
+  return dd+"/"+mm+" "+hh+":"+mi;
+}
+function fullDate(ts){
+  return new Date(ts).toLocaleString("it-IT",{weekday:"long",day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+function showCandleDetails(k){
+  if(!k)return;
+  const o=+k[1],h=+k[2],l=+k[3],c=+k[4],v=+k[5]||0,move=o?100*(c/o-1):0;
+  $("candleDetails").innerHTML='<b>'+fullDate(+k[0])+'</b> • timeframe <b>'+tf+'</b><br>'+
+    'Apertura '+px(o)+' • Massimo '+px(h)+' • Minimo '+px(l)+' • Chiusura '+px(c)+
+    ' • <span class="'+(move>=0?"upv":"downv")+'">'+(move>=0?"+":"")+move.toFixed(3)+'%</span>'+
+    (v>0?' • Volume '+v.toLocaleString():'');
+}
 function draw(){
   let data=K[tf];if(!data?.length)return;
   let cv=$("chart"),ctx=cv.getContext("2d"),W=cv.width,H=cv.height;
-  view=clamp(view,18,Math.min(180,data.length));off=clamp(off,0,Math.max(0,data.length-view));
+  view=clamp(view,2,Math.min(180,data.length));off=clamp(off,0,Math.max(0,data.length-view));
   let ei=Math.max(view,data.length-off),si=Math.max(0,ei-view),c=data.slice(si,ei),cl=c.map(x=>+x[4]),
       e9=emas(cl,9),e21=emas(cl,21),hi=Math.max(...c.map(x=>+x[2])),lo=Math.min(...c.map(x=>+x[3])),
-      pad=(hi-lo)*.07||1,top=20,bot=375,vtop=400,vbot=447,left=8,right=75,pw=W-left-right,ph=bot-top,
+      pad=(hi-lo)*.07||Math.abs(hi)*.001||1,top=20,bot=375,vtop=400,vbot=447,left=8,right=75,pw=W-left-right,ph=bot-top,
       y=p=>top+(hi+pad-p)/(hi-lo+2*pad)*ph,x=i=>left+(i+.5)*pw/c.length,
-      cw=Math.max(3,pw/c.length*.62),mv=Math.max(...c.map(x=>+x[5]))||1;
-
+      cw=Math.max(3,Math.min(26,pw/c.length*.62)),mv=Math.max(...c.map(x=>+x[5]))||1;
+  chartMeta={c,left,right,pw,W,H,x};
   ctx.fillStyle="#0f151e";ctx.fillRect(0,0,W,H);
   ctx.strokeStyle="#263143";ctx.fillStyle="#8f9bad";ctx.font="11px system-ui";
 
   for(let i=0;i<6;i++){
-    let yy=top+i*ph/5;
-    ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(W-right,yy);ctx.stroke();
+    let yy=top+i*ph/5;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(W-right,yy);ctx.stroke();
     ctx.fillText(fmt(hi+pad-(hi-lo+2*pad)*i/5),W-right+5,yy+4);
   }
 
-  // Asse temporale: giorno + ora locale del dispositivo.
-  const labelCount=cv.clientWidth<650?4:6;
+  const desired=cv.clientWidth<650?4:6,labelCount=Math.max(1,Math.min(desired,c.length));
   ctx.textAlign="center";ctx.textBaseline="top";ctx.fillStyle="#8f9bad";
   for(let j=0;j<labelCount;j++){
-    const idx=Math.round(j*(c.length-1)/(labelCount-1));
-    const xx=x(idx),dt=new Date(+c[idx][0]);
-    const dd=String(dt.getDate()).padStart(2,"0"),mm=String(dt.getMonth()+1).padStart(2,"0");
-    const hh=String(dt.getHours()).padStart(2,"0"),mi=String(dt.getMinutes()).padStart(2,"0");
-    const label=dd+"/"+mm+" "+hh+":"+mi;
+    const idx=labelCount===1?0:Math.round(j*(c.length-1)/(labelCount-1)),xx=x(idx);
     ctx.strokeStyle="#202b39";ctx.beginPath();ctx.moveTo(xx,top);ctx.lineTo(xx,vbot);ctx.stroke();
-    const lx=clamp(xx,58,W-right-58);
-    ctx.fillText(label,lx,458);
+    ctx.fillText(axisLabel(+c[idx][0]),clamp(xx,58,W-right-58),458);
   }
   ctx.textAlign="left";ctx.textBaseline="alphabetic";
 
@@ -168,24 +264,47 @@ function draw(){
     let o=+k[1],h=+k[2],l=+k[3],cc=+k[4],xx=x(i),col=cc>=o?"#66dfa0":"#ff7c87";
     ctx.strokeStyle=col;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(xx,y(h));ctx.lineTo(xx,y(l));ctx.stroke();
     ctx.fillRect(xx-cw/2,Math.min(y(o),y(cc)),cw,Math.max(1.5,Math.abs(y(o)-y(cc))));
-    if(+k[5]>0){
-      ctx.globalAlpha=.28;
-      ctx.fillRect(xx-cw/2,vbot-(+k[5]/mv)*(vbot-vtop),cw,(+k[5]/mv)*(vbot-vtop));
-      ctx.globalAlpha=1
-    }
+    if(+k[5]>0){ctx.globalAlpha=.28;ctx.fillRect(xx-cw/2,vbot-(+k[5]/mv)*(vbot-vtop),cw,(+k[5]/mv)*(vbot-vtop));ctx.globalAlpha=1}
   });
 
-  function line(a,col){
-    ctx.strokeStyle=col;ctx.beginPath();let go=false;
-    a.forEach((v,i)=>{if(!Number.isFinite(v))return;go?ctx.lineTo(x(i),y(v)):(ctx.moveTo(x(i),y(v)),go=true)});
-    ctx.stroke()
+  if(selectedCandleTs!=null){
+    const idx=c.findIndex(k=>+k[0]===+selectedCandleTs);
+    if(idx>=0){
+      const k=c[idx],xx=x(idx);
+      ctx.fillStyle="rgba(88,211,234,.09)";ctx.fillRect(Math.max(left,xx-cw),top,Math.max(cw*2,8),vbot-top);
+      ctx.strokeStyle="#58d3ea";ctx.lineWidth=2;ctx.strokeRect(xx-cw/2-3,y(+k[2])-4,cw+6,Math.max(10,y(+k[3])-y(+k[2])+8));ctx.lineWidth=1;
+      showCandleDetails(k);
+    }
   }
-  line(e9,"#58d3ea");line(e21,"#f5d76f");
 
-  let k=c.at(-1),dt=new Date(+k[0]);
-  $("ohlc").textContent=dt.toLocaleString()+" • O "+fmt(k[1])+" H "+fmt(k[2])+" L "+fmt(k[3])+" C "+fmt(k[4])
+  function line(a,col){ctx.strokeStyle=col;ctx.beginPath();let go=false;a.forEach((v,i)=>{if(!Number.isFinite(v))return;go?ctx.lineTo(x(i),y(v)):(ctx.moveTo(x(i),y(v)),go=true)});ctx.stroke()}
+  line(e9,"#58d3ea");line(e21,"#f5d76f");
+  let k=selectedCandleTs!=null?c.find(x=>+x[0]===+selectedCandleTs):null;if(!k)k=c.at(-1);
+  $("ohlc").textContent=fullDate(+k[0])+" • O "+fmt(k[1])+" H "+fmt(k[2])+" L "+fmt(k[3])+" C "+fmt(k[4]);
 }
-function zoom(n){view=clamp(Math.round(n),18,180);draw()}$("plus").onclick=()=>zoom(view*.78);$("minus").onclick=()=>zoom(view*1.28);$("reset").onclick=()=>{view=80;off=0;draw()};let cv=$("chart");cv.addEventListener("wheel",e=>{e.preventDefault();zoom(view*(e.deltaY<0?.82:1.22))},{passive:false});cv.onmousedown=e=>{drag=true;sx=e.clientX;so=off};window.onmousemove=e=>{if(!drag)return;let r=cv.getBoundingClientRect(),per=(r.width*.92)/view;off=clamp(so+Math.round((e.clientX-sx)/Math.max(2,per)),0,Math.max(0,(K[tf]?.length||0)-view));draw()};window.onmouseup=()=>drag=false;cv.ondblclick=()=>{$("reset").click()};
+function zoom(n){view=clamp(Math.round(n),2,180);draw()}
+$("plus").onclick=()=>zoom(view*.78);
+$("minus").onclick=()=>zoom(view*1.28);
+$("reset").onclick=()=>{view=Math.min(80,K[tf]?.length||80);off=0;selectedCandleTs=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';draw()};
+let cv=$("chart");
+cv.addEventListener("wheel",e=>{e.preventDefault();zoom(view*(e.deltaY<0?.82:1.22))},{passive:false});
+function selectCandleAt(e){
+  if(!chartMeta?.c?.length)return;
+  const r=cv.getBoundingClientRect(),cx=(e.clientX-r.left)*(cv.width/r.width),m=chartMeta;
+  const raw=(cx-m.left)/m.pw*m.c.length-.5,idx=clamp(Math.round(raw),0,m.c.length-1),k=m.c[idx];
+  selectedCandleTs=+k[0];showCandleDetails(k);draw();
+}
+cv.addEventListener("pointerdown",e=>{drag=true;pointerMoved=false;sx=e.clientX;so=off;try{cv.setPointerCapture(e.pointerId)}catch{}});
+cv.addEventListener("pointermove",e=>{
+  if(!drag)return;
+  if(Math.abs(e.clientX-sx)>5)pointerMoved=true;
+  let r=cv.getBoundingClientRect(),per=(r.width*.92)/Math.max(2,view);
+  off=clamp(so+Math.round((e.clientX-sx)/Math.max(2,per)),0,Math.max(0,(K[tf]?.length||0)-view));
+  if(pointerMoved)draw();
+});
+cv.addEventListener("pointerup",e=>{if(!pointerMoved)selectCandleAt(e);drag=false;try{cv.releasePointerCapture(e.pointerId)}catch{}});
+cv.addEventListener("pointercancel",()=>{drag=false});
+cv.ondblclick=()=>{$("reset").click()};
 function preds(){try{return JSON.parse(localStorage.getItem(PKEY)||"[]")}catch{return[]}}function saveP(a){localStorage.setItem(PKEY,JSON.stringify(a.slice(-800)))}
 function actual(m,h){let t=h==="1h"?.35:h==="4h"?.75:1.4;return m>t?"UP":m<-t?"DOWN":"FLAT"}
 function record(price,a,b,c){let now=Date.now(),bucket=Math.floor(now/PINT),P=preds();if(P.some(x=>x.sym===sym&&x.bucket===bucket))return;P.push({id:sym+"-"+bucket,bucket,ts:now,sym,price,s1:a.sig,s4:b.sig,s24:c.sig,r1:null,r4:null,r24:null,o1:null,o4:null,o24:null,m1:null,m4:null,m24:null});saveP(P);renderP()}
@@ -232,7 +351,7 @@ async function stop(){
       bqConn=null;bqSubscribed=null;
     }
   }
-function startCryptoWS(){let s=sym.toLowerCase(),streams=[s+"@ticker",...new Set([...req,tf])].map(x=>s+"@kline_"+x);try{ws=new WebSocket("wss://data-stream.binance.vision/stream?streams="+streams.join("/"))}catch{return}ws.onopen=()=>{$("dot").className="dot on";$("live").textContent="LIVE"};ws.onmessage=e=>{let d=JSON.parse(e.data).data;if(d.e==="24hrTicker")updateQuote({p:+d.c,ch:+d.P,hi:+d.h,lo:+d.l,state:"open"});else if(d.e==="kline"){let k=d.k,row=[k.t,String(k.o),String(k.h),String(k.l),String(k.c),String(k.v),k.T];if(K[k.i]){let a=K[k.i];if(+a.at(-1)[0]===k.t)a[a.length-1]=row;else{a.push(row);if(a.length>240)a.shift()}}if(k.i===tf)draw();recalc()}};ws.onerror=()=>{$("dot").className="dot bad";$("live").textContent="REST"}}
+function startCryptoWS(){let s=sym.toLowerCase(),p=tfPlan(tf),chartStreams=p.synthetic?[]:[tf],streams=[s+"@ticker",...new Set([...req,...chartStreams])].map(x=>s+"@kline_"+x);try{ws=new WebSocket("wss://data-stream.binance.vision/stream?streams="+streams.join("/"))}catch{return}ws.onopen=()=>{$("dot").className="dot on";$("live").textContent="LIVE"};ws.onmessage=e=>{let d=JSON.parse(e.data).data;if(d.e==="24hrTicker")updateQuote({p:+d.c,ch:+d.P,hi:+d.h,lo:+d.l,state:"open"});else if(d.e==="kline"){let k=d.k,row=[k.t,String(k.o),String(k.h),String(k.l),String(k.c),String(k.v),k.T];if(K[k.i]){let a=K[k.i];if(+a.at(-1)[0]===k.t)a[a.length-1]=row;else{a.push(row);if(a.length>240)a.shift()}}if(k.i===tf)draw();recalc()}};ws.onerror=()=>{$("dot").className="dot bad";$("live").textContent="REST"}}
 async function startBQWS(){
   const a=asset();
   const bs=await resolveBq(a);
@@ -302,7 +421,7 @@ async function startBQWS(){
 }
 async function start(){
   await stop();
-  sym=$("sym").value;tf=$("tf").value;view=80;off=0;K={};
+  sym=$("sym").value;tf=$("tf").value;view=80;off=0;K={};selectedCandleTs=null;chartMeta=null;$("candleDetails").innerHTML='Clicca o tocca una candela per vedere <b>data, ora, apertura, massimo, minimo e chiusura</b>.';
   $("dot").className="dot";$("live").textContent="CONNESSIONE";$("summary").textContent="Carico "+asset().name+"...";
   try{
     await refreshAll();
@@ -323,6 +442,7 @@ async function start(){
     if(isCrypto()){
       startCryptoWS();
       bookPoll=setInterval(async()=>{try{await loadBook();recalc()}catch{}},7000);
+      if(tfPlan(tf).synthetic)candlePoll=setInterval(async()=>{try{K[tf]=await loadK(tf);draw()}catch{}},60000);
     }else{
       try{await startBQWS()}catch(e){
         $("dot").className="dot on";$("live").textContent="LIVE 1s";
@@ -339,7 +459,7 @@ async function start(){
     $("summary").textContent=e.message+(sym==="SPCX"?" — il resto dei mercati continua a funzionare normalmente.":"");
   }
 }
-$("sym").onchange=start;$("tf").onchange=start;$("refresh").onclick=start;setInterval(evaluate,120000);if("caches" in window){caches.delete("coinstraight-v5").catch(()=>{})}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{})}start();setTimeout(evaluate,4000);
+$("sym").onchange=start;$("tf").onchange=start;$("refresh").onclick=start;setInterval(evaluate,120000);if("caches" in window){caches.delete("coinstraight-v6").catch(()=>{})}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{})}start();setTimeout(evaluate,4000);
 </script>
 </body>
 </html>
